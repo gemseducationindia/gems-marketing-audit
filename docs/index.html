@@ -33,7 +33,8 @@ button { font: inherit; color: inherit; letter-spacing: inherit; }
 #gate { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; background: linear-gradient(180deg, #FFFFFF 0%, var(--soft) 100%); }
 .signin { width: 100%; max-width: 380px; display: grid; gap: 22px; text-align: center; }
 .logo { display: inline-flex; align-items: center; gap: 10px; justify-self: center; font-weight: 600; font-size: 15px; color: var(--navy); letter-spacing: -0.01em; }
-.logo .m { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 7px; background: var(--navy); color: #fff; font-size: 11px; font-weight: 700; letter-spacing: .02em; }
+.logo .m { display: block; width: 28px; height: 28px; }
+.signin .logo .m { width: 40px; height: 40px; }
 .signin h1 { font-size: 40px; line-height: 1.08; font-weight: 600; letter-spacing: -0.03em; margin: 0; }
 .signin p { margin: -10px 0 0; color: var(--muted); font-size: 17px; }
 .fields { display: grid; border: 1px solid var(--line-2); border-radius: 12px; overflow: hidden; background: #fff; text-align: left; }
@@ -128,7 +129,7 @@ button { font: inherit; color: inherit; letter-spacing: inherit; }
 
 /* ---------- page ---------- */
 main { padding-block: 28px 64px; display: grid; gap: 44px; }
-.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .kpi { padding: 18px 20px 18px 0; display: grid; gap: 4px; }
 .kpi + .kpi { padding-left: 20px; border-left: 1px solid var(--line); }
 .kpi .k { font-size: 13px; color: var(--muted); }
@@ -214,7 +215,7 @@ details.defs b { color: var(--ink-2); font-weight: 600; }
 <body>
 <div id="gate" hidden>
   <form class="signin" id="signin" autocomplete="on">
-    <span class="logo"><span class="m">G</span>GEMS Education</span>
+    <span class="logo"><img class="m" src="logo.png" alt="GEMS" width="28" height="28">GEMS Education</span>
     <h1>Marketing Audit</h1>
     <p>Sign in to see your campuses.</p>
     <div class="fields">
@@ -231,7 +232,7 @@ details.defs b { color: var(--ink-2); font-weight: 600; }
   <div class="top">
     <div class="wrap">
       <nav class="nav">
-        <span class="logo"><span class="m">G</span>Marketing Audit</span>
+        <span class="logo"><img class="m" src="logo.png" alt="GEMS" width="28" height="28">Marketing Audit</span>
         <div class="tabs" role="tablist">
           <button class="tab" role="tab" data-tab="funnel" aria-selected="true">Funnel</button>
           <button class="tab" role="tab" data-tab="wow" aria-selected="false">Week on week</button>
