@@ -87,7 +87,8 @@ tr.nolead td { color: var(--muted); font-style: italic; }
 .chip { font: inherit; font-size: 13px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); padding: 4px 11px; border-radius: 999px; cursor: pointer; }
 .chip[aria-pressed="true"] { background: var(--navy); border-color: var(--navy); color: #fff; }
 .chip .ag { font-size: 11px; opacity: .7; margin-left: 4px; }
-.reasons { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: 12px 24px; }
+.campus-cards { display: grid; gap: 20px; }
+.reasons { display: grid; gap: 4px; padding-top: 4px; }
 .reasons h3 { font-size: 14px; font-weight: 600; margin: 0 0 4px; }
 .reasons ul { margin: 0; padding-left: 18px; display: grid; gap: 2px; }
 .reasons li { font-variant-numeric: tabular-nums; }
@@ -137,19 +138,7 @@ tr.nolead td { color: var(--muted); font-style: italic; }
     <div class="scroll"><table id="channelTable"></table></div>
   </section>
 
-  <section class="card">
-    <div class="card-head">
-      <div><h2>By campus and channel</h2><p>Each campus total first, then its channels.</p></div>
-    </div>
-    <div class="scroll"><table id="campusTable"></table></div>
-  </section>
-
-  <section class="card">
-    <div class="card-head">
-      <div><h2>Why leads were marked junk or lost</h2><p>Most common reasons recorded in the CRM, per campus.</p></div>
-    </div>
-    <div class="reasons" id="reasons"></div>
-  </section>
+  <div class="campus-cards" id="campusCards"></div>
 
   <section class="defs">
     <p><b>Leads</b>: every CRM lead (duplicates excluded). <b>Channel</b>: Meta = Meta Ads, Instagram Ads, Facebook; Google = Google Ads; Website = Website Enquiry; Others = walk-in, referral, open house, events and the rest.</p>
@@ -212,10 +201,10 @@ tr.nolead td { color: var(--muted); font-style: italic; }
     "GEMS School of Excellence - Jodhpur": ["GSE Jodhpur", "Edelytics"], "GEMS School of Excellence - Lucknow": ["GSE Lucknow", "Edelytics"],
     "GEMS Millennium School - Varanasi": ["GMS Varanasi", "Edelytics"], "GEMS Modern Academy - Kochi": ["GMA Kochi", "Because"],
     "GEMS Millennium School - Kochi": ["GMS Kochi", "Because"], "Little GEMS - Kochi": ["Little GEMS Kochi", "No agency"],
-    "GEMS Millennium School - Vikhroli": ["Cresmonde Vikhroli", "EchoVME"], "GEMS Millennium School - Kalyan": ["Cresmonde Kalyan", "EchoVME"],
+    "GEMS Millennium School - Vikhroli": ["GMS Vikhroli", "EchoVME"], "GEMS Millennium School - Kalyan": ["GMS Kalyan", "EchoVME"],
     "GEMS Modern Academy - Coimbatore": ["GMA Coimbatore", "EchoVME"], "GEMS Millennium School - Raipur": ["GMS Raipur", "EchoVME"],
   };
-  const short = (c) => (NAMES[c] || [c === "Unassigned" ? "No campus set" : c])[0];
+  const short = (c) => (NAMES[c] || [c])[0];
   const agencyOf = (c) => (NAMES[c] || [, "No agency"])[1];
   const AGENCIES = ["Edelytics", "Because", "EchoVME", "No agency"];
   const CH_ORDER = ["Meta", "Google", "Website", "Others"];
@@ -279,7 +268,7 @@ tr.nolead td { color: var(--muted); font-style: italic; }
   };
 
   function render(data) {
-    const rows = data.rows, reasons = data.reasons || {};
+    const rows = data.rows.filter((r) => r.campus !== "Unassigned"), reasons = data.reasons || {};
     $("#asof").textContent = "Season to date (AY 2027-28). CRM data live as of " + data.taken + "; admissions entry sheet as of " + data.sheet_taken + ".";
     const campuses = [...new Set(rows.map((r) => r.campus))]
       .sort((a, b) => sum(rows.filter((r) => r.campus === b)).leads - sum(rows.filter((r) => r.campus === a)).leads);
@@ -337,27 +326,34 @@ tr.nolead td { color: var(--muted); font-style: italic; }
       for (const ch of CH_ORDER) { const x = rs.filter((r) => r.channel === ch); if (x.length) row(tb, [ch], sum(x)); }
       row(tb, ["All channels"], all, "total"); ct.append(tb);
 
-      const t = $("#campusTable"); t.textContent = ""; header(t, ["Campus", "Channel"]);
-      const body = document.createElement("tbody");
+      const cards = $("#campusCards"); cards.textContent = "";
       for (const c of sel) {
         const x = rows.filter((r) => r.campus === c);
-        row(body, [short(c), "All channels"], sum(x), "total campus-start");
-        for (const ch of CH_ORDER) { const y = x.filter((r) => r.channel === ch); if (y.length) row(body, ["", ch], sum(y)); }
-      }
-      t.append(body);
+        const card = document.createElement("section"); card.className = "card"; card.id = "campus-" + short(c).replace(/\W+/g, "-").toLowerCase();
+        const head = document.createElement("div"); head.className = "card-head";
+        const hd = document.createElement("div"); const h = document.createElement("h2"); h.textContent = short(c);
+        const p = document.createElement("p"); p.textContent = agencyOf(c) === "No agency" ? "No agency" : "Agency: " + agencyOf(c);
+        hd.append(h, p); head.append(hd); card.append(head);
+        const wrap = document.createElement("div"); wrap.className = "scroll";
+        const t = document.createElement("table"); header(t, ["Channel"]);
+        const body = document.createElement("tbody");
+        for (const ch of CH_ORDER) { const y = x.filter((r) => r.channel === ch); if (y.length) row(body, [ch], sum(y)); }
+        row(body, ["All channels"], sum(x), "total");
+        t.append(body); wrap.append(t); card.append(wrap);
 
-      const rw = $("#reasons"); rw.textContent = "";
-      for (const c of sel) {
-        const list = reasons[c] || []; if (!list.length) continue;
+        const rb = document.createElement("div"); rb.className = "reasons";
+        const list = reasons[c] || [];
         const total = list.reduce((s, [, n]) => s + n, 0);
-        const box = document.createElement("div");
-        const h = document.createElement("h3"); h.textContent = short(c); box.append(h);
-        const m = document.createElement("div"); m.className = "muted"; m.textContent = int(total) + " junk or lost leads"; box.append(m);
-        const ul = document.createElement("ul");
-        for (const [r, n] of list.slice(0, 4)) { const li = document.createElement("li"); li.textContent = r + ": " + int(n) + " (" + pct(n, total) + ")"; ul.append(li); }
-        box.append(ul); rw.append(box);
+        const h3 = document.createElement("h3");
+        h3.textContent = total ? "Why " + int(total) + " leads were marked junk or lost" : "No leads marked junk or lost yet";
+        rb.append(h3);
+        if (total) {
+          const ul = document.createElement("ul");
+          for (const [r, n] of list.slice(0, 4)) { const li = document.createElement("li"); li.textContent = r + ": " + int(n) + " (" + pct(n, total) + ")"; ul.append(li); }
+          rb.append(ul);
+        }
+        card.append(rb); cards.append(card);
       }
-      if (!rw.childElementCount) { const p = document.createElement("p"); p.className = "muted"; p.textContent = "No junk or lost leads for this selection."; rw.append(p); }
     }
     sync();
   }
