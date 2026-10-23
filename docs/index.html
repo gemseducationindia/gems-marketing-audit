@@ -152,7 +152,7 @@ tr.nolead td { color: var(--muted); font-style: italic; }
   <div class="campus-cards" id="campusCards"></div>
 
   <section class="defs">
-    <p><b>Dates</b>: leads, calls, visits and junk/lost count the leads <i>created</i> in the range (with everything done on them so far). Applications, enrollments, revenue and spend count what was <i>paid</i> in the range. <b>Spend</b> so far is Edelytics only (to its sheet's last day); other agencies show – until their sheets are added. <b>CAC % of revenue</b>: spend ÷ revenue for the same campus, channel and dates.</p>
+    <p><b>Dates</b>: leads, calls, visits and junk/lost count the leads <i>created</i> in the range (with everything done on them so far). Applications, enrollments, revenue and spend count what was <i>paid</i> in the range. <b>Spend</b> so far is Edelytics only (to its sheet's last day); other agencies show – until their sheets are added. <b>CAC % of revenue</b>: spend ÷ revenue for the same campus, channel and dates. <b>Impressions, clicks and agency-reported leads</b> come from the agency's sheet; CTR = clicks ÷ impressions. Compare agency-reported leads with the CRM's leads to see how many of their leads actually reached the CRM.</p>
     <p><b>Leads</b>: every CRM lead (duplicates and leads with no campus excluded). <b>Channel</b>: Meta = Meta Ads, Instagram Ads, Facebook; Google = Google Ads; Website = Website Enquiry; Others = walk-in, referral, open house, events and the rest.</p>
     <p><b>Reached</b>: at least one outgoing call. <b>Dials</b>: outgoing calls, not counting a counsellor's outcome note logged right after an Exotel call. <b>Connect</b>: an answered call that lasted more than 0 seconds. <b>Connect rate</b>: connects ÷ dials.</p>
     <p><b>Visits scheduled / done</b>: a campus visit booked / marked done in the CRM. <b>Junk + lost</b>: lead status Junk or Lost.</p>
@@ -220,7 +220,7 @@ tr.nolead td { color: var(--muted); font-style: italic; }
   const agencyOf = (c) => (NAMES[c] || [, "No agency"])[1];
   const AGENCIES = ["Edelytics", "Because", "EchoVME", "No agency"];
   const CH_ORDER = ["Meta", "Google", "Website", "Others"];
-  const N = ["leads", "reached", "dials", "connects", "sched", "visited", "junk_lost", "apps", "enrols", "revenue", "spend"];
+  const N = ["leads", "reached", "dials", "connects", "sched", "visited", "junk_lost", "apps", "enrols", "revenue", "spend", "impr", "clicks", "ag_leads"];
   const int = (n) => Math.round(n).toLocaleString("en-IN");
   const pct = (a, b) => (b ? (100 * a / b).toFixed(1) + "%" : null);
   const dec = (a, b) => (b ? (a / b).toFixed(2) : null);
@@ -249,6 +249,11 @@ tr.nolead td { color: var(--muted); font-style: italic; }
     ["Revenue", (t) => inr(t.revenue), "bl"],
     ["Revenue / lead", (t) => t.leads ? inr(t.revenue / t.leads) : null],
     ["Spend", (t) => t.spend ? inr(t.spend) : null, "bl"],
+    ["Impressions", (t) => t.impr ? int(t.impr) : null],
+    ["Clicks", (t) => t.clicks ? int(t.clicks) : null],
+    ["CTR", (t) => t.clicks && t.impr ? (100 * t.clicks / t.impr).toFixed(2) + "%" : null],
+    ["Cost / click", (t) => t.spend && t.clicks ? "₹" + (t.spend / t.clicks).toFixed(1) : null],
+    ["Agency-reported leads", (t) => t.spend ? int(t.ag_leads) : null],
     ["Cost / lead", (t) => t.spend && t.leads ? inr(t.spend / t.leads) : null],
     ["Cost / enrollment", (t) => t.spend && t.enrols ? inr(t.spend / t.enrols) : null],
     ["CAC % of revenue", (t) => t.spend && t.revenue ? pct(t.spend, t.revenue) : null],
@@ -355,7 +360,7 @@ tr.nolead td { color: var(--muted); font-style: italic; }
         if (inR(s[3])) at(s[0], s[1]).enrols++;
       }
       for (const f of data.fees) if (selSet.has(f[1]) && inR(f[0])) at(f[1], f[2]).revenue += f[3];
-      for (const x of data.spend) if (selSet.has(x[1]) && inR(x[0])) at(x[1], x[2]).spend += x[3];
+      for (const x of data.spend) if (selSet.has(x[1]) && inR(x[0])) add(at(x[1], x[2]), { spend: x[3], impr: x[4] || 0, clicks: x[5] || 0, ag_leads: x[6] || 0 });
       const of = (ci, ch) => grid[ci + "|" + ch] || blank();
       const camp = (ci) => sum(CH.map((_, h) => of(ci, h)));
       const all = sum(sel.map(camp));

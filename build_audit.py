@@ -145,7 +145,10 @@ if sheet:
         for r in ws.iter_rows(values_only=True):
             for ch, c in (("Google", 0), ("Meta", 7)):
                 if len(r) > c + 3 and isinstance(r[c], dt.datetime) and isinstance(r[c + 3], (int, float)) and r[c + 3]:
-                    SP.append([r[c].date().isoformat(), idx(campuses, camp), channels.index(ch), round(r[c + 3], 2)])
+                    n = lambda v: v if isinstance(v, (int, float)) else 0
+                    # Spend: [day, campus, channel, spend, impressions, clicks, agency-reported conversions]
+                    SP.append([r[c].date().isoformat(), idx(campuses, camp), channels.index(ch), round(r[c + 3], 2),
+                               n(r[c + 1]), n(r[c + 2]), n(r[c + 4])])
                     spend_upto["Edelytics"] = max(spend_upto.get("Edelytics", ""), r[c].date().isoformat())
 
 now = dt.datetime.utcnow() + dt.timedelta(hours=5, minutes=30)
