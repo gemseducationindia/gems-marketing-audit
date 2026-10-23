@@ -1,14 +1,18 @@
 """Marketing audit data: one record per lead, per fee payment and per day of agency spend, so the page can
-recount any date range. No names, phone numbers or emails leave this script. Writes audit.json.
+recount any date range and drill into source, campaign and ad. No names, phone numbers or emails leave this script.
+Writes audit.json.
 
-Usage: python3 build_audit.py   (needs ~/.gems_crm_token, admissions.csv beside it; env EDELYTICS_SHEET, ECHOVME_SHEET for spend)
+Usage: python3 build_audit.py
+Needs ~/.gems_crm_token, admissions.csv beside it, and the agencies' live spend sheet IDs in
+~/.gems_marketing_audit_sheets.json ({"Edelytics": id, "EchoVME": id, "Because": id}). The IDs stay off the public repo.
 """
-import csv, datetime as dt, io, json, os, re, time, urllib.parse, urllib.request, collections as C
+import csv, datetime as dt, io, json, os, time, urllib.parse, urllib.request, collections as C
 import openpyxl
 
 B = "https://gemseducation.m.frappe.cloud"
 T = open(os.path.expanduser("~/.gems_crm_token")).read().strip()
 HERE = os.path.dirname(os.path.abspath(__file__))
+SHEETS = json.load(open(os.path.expanduser("~/.gems_marketing_audit_sheets.json")))
 
 
 def get(doctype, fields, filters=()):
@@ -29,23 +33,34 @@ def get(doctype, fields, filters=()):
         start += 500
 
 
+def workbook(agency):
+    for attempt in range(4):
+        try:
+            return openpyxl.load_workbook(io.BytesIO(urllib.request.urlopen(
+                f"https://docs.google.com/spreadsheets/d/{SHEETS[agency]}/export?format=xlsx", timeout=90).read()), data_only=True)
+        except Exception as e:
+            if attempt == 3: raise
+            print("retry sheet", agency, e, flush=True); time.sleep(5)
+
+
 d10 = lambda p: (lambda s: s[-10:] if len(s) >= 10 else None)("".join(c for c in (p or "") if c.isdigit()))
+num = lambda v: v if isinstance(v, (int, float)) else 0
 CHANNEL = {"Meta Ads": "Meta", "Instagram Ads": "Meta", "Facebook": "Meta", "Google Ads": "Google", "Website Enquiry": "Website"}
 channel = lambda src: CHANNEL.get(src or "", "Others")
 CAMPUS_ALIAS = {"Cresmonde World School - Vikhroli": "GEMS Millennium School - Vikhroli",
                 "Cresmonde World School - Kalyan": "GEMS Millennium School - Kalyan"}
 SHORT = {"GMS": "GEMS Millennium School", "GMA": "GEMS Modern Academy", "GSE": "GEMS School of Excellence"}
+INVALID = "Invalid lead"
 REASON = {"not iooking for admissions": "Not looking for admission", "not inetersted": "Not looking for admission",
-          "not interested": "Not looking for admission", "invalid": "Duplicate or invalid enquiry",
-          "wrong number": "Duplicate or invalid enquiry", "testing": "Duplicate or invalid enquiry",
-          "applied mistakenly": "Duplicate or invalid enquiry", "international number": "Duplicate or invalid enquiry",
-          "he is part of school": "Duplicate or invalid enquiry", "looking for job": "Looking for a job, not admission",
+          "not interested": "Not looking for admission", "duplicate or invalid enquiry": INVALID, "invalid": INVALID,
+          "wrong number": INVALID, "testing": INVALID, "applied mistakenly": INVALID, "international number": INVALID,
+          "he is part of school": INVALID, "looking for job": "Looking for a job, not admission",
           "interested only if she gets a job in gems": "Looking for a job, not admission",
           "no seat in requested grade": "Grade not available", "prefer cbse": "Curriculum mismatch",
           "state to cbse issue": "Curriculum mismatch"}
 
 leads = get("CRM Lead", ["name", "creation", "source", "territory", "status", "is_duplicate", "visit_state", "visit_done_on",
-                         "mobile_no", "phone", "lost_reason"])
+                         "mobile_no", "phone", "lost_reason", "utm_campaign", "utm_content"])
 visits = get("GEMS Visit", ["enquiry", "status"])
 calls = get("CRM Call Log", ["type", "status", "duration", "telephony_medium", "reference_docname", "to", "start_time", "creation"],
             [["type", "=", "Outgoing"]])
@@ -82,10 +97,13 @@ for c in calls:
         dials[i] += 1
         if c["status"] == "Completed" and (c["duration"] or 0) > 0: conns[i] += 1
 
-campuses, channels, reasons = [], ["Meta", "Google", "Website", "Others"], []
+campuses, channels, reasons, labels = [], ["Meta", "Google", "Website", "Others"], [], []
 idx = lambda lst, v: lst.index(v) if v in lst else (lst.append(v) or len(lst) - 1)
+lab = lambda v: idx(labels, (v or "").strip() or "(not set)")
+tags = lambda l: [lab(l["source"]), lab(l["utm_campaign"]), lab(l["utm_content"])]   # source, campaign, ad
 
-# Leads: [created on, campus, channel, reached, dials, connects, visit scheduled, visit done, junk/lost, reason or -1]
+# Leads: [created on, campus, channel, contacted, dials, connects, visit scheduled, visit done, junk/lost, reason or -1,
+#         source, campaign, ad]   (the last three index into labels)
 L = []
 for l in leads:
     i, jl = l["name"], l["status"] in ("Junk", "Lost")
@@ -94,7 +112,7 @@ for l in leads:
         txt = (l["lost_reason"] or "").strip() or "Not recorded"
         r = idx(reasons, REASON.get(txt.lower(), txt))
     L.append([l["creation"][:10], idx(campuses, l["territory"]), channels.index(channel(l["source"])), int(dials[i] > 0),
-              dials[i], conns[i], int(i in vs), int(i in vd), int(jl), r])
+              dials[i], conns[i], int(i in vs), int(i in vd), int(jl), r] + tags(l))
 
 # Admissions sheet: one entry per student; each fee counts on its own payment date
 def pdate(s):
@@ -103,7 +121,7 @@ def pdate(s):
         try: return dt.datetime.strptime(s, f).date().isoformat()
         except ValueError: pass
     return None
-num = lambda v: float(str(v).replace(",", "").strip() or 0)
+amt = lambda v: float(str(v).replace(",", "").strip() or 0)
 yes = lambda v: (v or "").strip().lower() == "yes"
 students = {}
 with open(os.path.join(HERE, "admissions.csv"), newline="", encoding="utf-8") as f:   # export of the admissions entry sheet; never committed
@@ -114,7 +132,7 @@ with open(os.path.join(HERE, "admissions.csv"), newline="", encoding="utf-8") as
 
 S, F, unmatched = [], [], 0
 for campus, ph, r in students.values():
-    fees = [(k, pdate(r[f"{label} fee payment date (DD/MM/YYYY)"]), num(r[f"{label} fee amount paid (₹)"]))
+    fees = [(k, pdate(r[f"{label} fee payment date (DD/MM/YYYY)"]), amt(r[f"{label} fee amount paid (₹)"]))
             for k, label in (("app", "Application"), ("adm", "Admission"), ("tui", "Tuition / term"))
             if yes(r[f"{label} fee paid?" if label != "Tuition / term" else "Tuition / term fee paid?"])]
     if not fees: continue
@@ -122,62 +140,75 @@ for campus, ph, r in students.values():
     lead = next((l for l in cands if l["territory"] == campus), cands[0] if cands else None)
     unmatched += lead is None
     ci, ch = idx(campuses, campus), channels.index(channel(lead["source"]) if lead else "Others")  # no CRM lead -> Others
+    tg = tags(lead) if lead else [lab("No CRM lead"), lab(None), lab(None)]
     app = next((d for k, d, _ in fees if k == "app"), None)
     enrol = min([d for k, d, _ in fees if k in ("adm", "tui") and d] or [None])
-    # Students: [campus, channel, application date or null, enrollment date or null]
-    S.append([ci, ch, app, enrol])
-    # Fees: [paid on, campus, channel, amount]
-    F += [[d, ci, ch, a] for _, d, a in fees if d and a]
+    # Students: [campus, channel, application date or null, enrollment date or null, source, campaign, ad]
+    S.append([ci, ch, app, enrol] + tg)
+    # Fees: [paid on, campus, channel, amount, source, campaign, ad]
+    F += [[d, ci, ch, a] + tg for _, d, a in fees if d and a]
 
-# Agency spend per day. Edelytics: one tab per campus (e.g. "GMS Gurugram"), Google Ads in A-F, Meta Ads in H-M.
+# Agency spend per day: [day, campus, channel, spend, impressions, clicks, agency-reported leads, reach, campaign or -1]
 SP, spend_upto = [], {}
-def campus_of(tab):
+def spend(agency, day, camp, ch, amount, impr=0, clicks=0, ag_leads=0, reach=0, campaign=None):
+    SP.append([day.date().isoformat(), idx(campuses, camp), channels.index(ch), round(amount, 2), num(impr), num(clicks),
+               num(ag_leads), num(reach), lab(campaign) if campaign else -1])
+    spend_upto[agency] = max(spend_upto.get(agency, ""), day.date().isoformat())
+
+def campus_of(tab):   # "GMS Gurugram" -> "GEMS Millennium School - Gurugram"
     p = tab.strip().split(" ", 1)
     name = f"{SHORT.get(p[0], p[0])} - {p[1]}" if len(p) == 2 else tab
     return name if name in campuses or any(l["territory"] == name for l in leads) else None
-sheet = os.environ.get("EDELYTICS_SHEET")
-if sheet:
-    wb = openpyxl.load_workbook(io.BytesIO(urllib.request.urlopen(
-        f"https://docs.google.com/spreadsheets/d/{sheet}/export?format=xlsx", timeout=90).read()), data_only=True)
-    for ws in wb:
-        camp = campus_of(ws.title)
-        if not camp: print("skipping Edelytics tab", ws.title); continue
-        for r in ws.iter_rows(values_only=True):
-            for ch, c in (("Google", 0), ("Meta", 7)):
-                if len(r) > c + 3 and isinstance(r[c], dt.datetime) and isinstance(r[c + 3], (int, float)) and r[c + 3]:
-                    n = lambda v: v if isinstance(v, (int, float)) else 0
-                    # Spend: [day, campus, channel, spend, impressions, clicks, agency-reported conversions]
-                    SP.append([r[c].date().isoformat(), idx(campuses, camp), channels.index(ch), round(r[c + 3], 2),
-                               n(r[c + 1]), n(r[c + 2]), n(r[c + 4])])
-                    spend_upto["Edelytics"] = max(spend_upto.get("Edelytics", ""), r[c].date().isoformat())
 
-# EchoVME: a tab per month with side-by-side blocks per campus/platform/objective (no clicks). Same BLOCKS as the
-# leadership report's agencies/echovme.py: tab -> [(campus, channel, date col, spend col, impressions col, leads col)].
+# Edelytics: one tab per campus; row 1 titles each block ("Google Ads - Performance", "Meta Ads - Performance", "Total"),
+# row 2 names its columns (Day, Impr., Reach, Clicks, Cost, Conversions...). Columns differ by tab, so go by the names.
+for ws in workbook("Edelytics"):
+    camp = campus_of(ws.title)
+    if not camp: print("skipping Edelytics tab", ws.title); continue
+    rows = list(ws.iter_rows(values_only=True))
+    starts = [(i, str(v)) for i, v in enumerate(rows[0]) if v] + [(len(rows[1]), "")]
+    for (c0, title), (c1, _) in zip(starts, starts[1:]):
+        ch = "Google" if "google" in title.lower() else "Meta" if "meta" in title.lower() else None
+        if not ch: continue
+        col = {str(rows[1][i]).strip().lower(): i for i in range(c0, c1) if rows[1][i]}
+        g = lambda r, k: r[col[k]] if k in col and col[k] < len(r) else 0
+        for r in rows[2:]:
+            if isinstance(g(r, "day"), dt.datetime) and num(g(r, "cost")):
+                spend("Edelytics", g(r, "day"), camp, ch, g(r, "cost"), impr=g(r, "impr."), clicks=g(r, "clicks"),
+                      ag_leads=g(r, "conversions"), reach=g(r, "reach"))
+
+# EchoVME: a tab per month with side-by-side blocks per campus/platform/objective (no clicks). Same blocks as the
+# leadership report's agencies/echovme.py: tab -> [(campus, channel, date, spend, impressions, reach, leads columns)].
+RAIPUR, CBE = "GEMS Millennium School - Raipur", "GEMS Modern Academy - Coimbatore"
 ECHO_BLOCKS = {
-    "Sept": [("GEMS Millennium School - Raipur", "Meta", 0, 1, 3, None), ("GEMS Modern Academy - Coimbatore", "Meta", 0, 6, 8, None),
-             ("GEMS Millennium School - Raipur", "Google", 11, 12, 13, None), ("GEMS Modern Academy - Coimbatore", "Google", 11, 16, 17, None)],
-    "Oct": [("GEMS Millennium School - Raipur", "Meta", 0, 1, 3, None), ("GEMS Modern Academy - Coimbatore", "Meta", 0, 6, 8, None),
-            ("GEMS Modern Academy - Coimbatore", "Meta", 0, 11, None, 12),
-            ("GEMS Millennium School - Vikhroli", "Meta", 0, 15, 17, None), ("GEMS Millennium School - Kalyan", "Meta", 0, 20, 22, None),
-            ("GEMS Modern Academy - Coimbatore", "Google", 25, 26, 27, None), ("GEMS Modern Academy - Coimbatore", "Google", 25, 29, None, 30)],
+    "Sept": [(RAIPUR, "Meta", 0, 1, 3, 2, None), (CBE, "Meta", 0, 6, 8, 7, None),
+             (RAIPUR, "Google", 11, 12, 13, None, None), (CBE, "Google", 11, 16, 17, None, None)],
+    "Oct": [(RAIPUR, "Meta", 0, 1, 3, 2, None), (CBE, "Meta", 0, 6, 8, 7, None), (CBE, "Meta", 0, 11, None, None, 12),
+            ("GEMS Millennium School - Vikhroli", "Meta", 0, 15, 17, 16, None), ("GEMS Millennium School - Kalyan", "Meta", 0, 20, 22, 21, None),
+            (CBE, "Google", 25, 26, 27, None, None), (CBE, "Google", 25, 29, None, None, 30)],
 }
-sheet = os.environ.get("ECHOVME_SHEET")
-if sheet:
-    wb = openpyxl.load_workbook(io.BytesIO(urllib.request.urlopen(
-        f"https://docs.google.com/spreadsheets/d/{sheet}/export?format=xlsx", timeout=90).read()), data_only=True)
-    for tab, blocks in ECHO_BLOCKS.items():
-        if tab not in wb.sheetnames: print("missing EchoVME tab", tab); continue
-        for r in wb[tab].iter_rows(min_row=5, values_only=True):
-            for camp, ch, dc, sc, ic, lc in blocks:
-                v = lambda c: (r[c] if isinstance(r[c], (int, float)) else 0) if c is not None and c < len(r) else 0
-                if dc < len(r) and isinstance(r[dc], dt.datetime) and v(sc):
-                    SP.append([r[dc].date().isoformat(), idx(campuses, camp), channels.index(ch), round(v(sc), 2), v(ic), 0, v(lc)])
-                    spend_upto["EchoVME"] = max(spend_upto.get("EchoVME", ""), r[dc].date().isoformat())
+wb = workbook("EchoVME")
+for tab, blocks in ECHO_BLOCKS.items():
+    if tab not in wb.sheetnames: print("missing EchoVME tab", tab); continue
+    for r in wb[tab].iter_rows(min_row=5, values_only=True):
+        for camp, ch, dc, sc, ic, rc, lc in blocks:
+            v = lambda c: num(r[c]) if c is not None and c < len(r) else 0
+            if dc < len(r) and isinstance(r[dc], dt.datetime) and v(sc):
+                spend("EchoVME", r[dc], camp, ch, v(sc), impr=v(ic), ag_leads=v(lc), reach=v(rc))
+
+# Because: one tab per campus ("GMS Kochi"), Meta only, one row per day and campaign:
+# Day, Campaign name, Objective, Delivery, Amount spent, Impressions, Reach, Link clicks, Leads, CTR, Frequency
+for ws in workbook("Because"):
+    camp = campus_of(ws.title)
+    if not camp: print("skipping Because tab", ws.title); continue
+    for r in ws.iter_rows(min_row=2, values_only=True):
+        if len(r) > 8 and isinstance(r[0], dt.datetime) and num(r[4]):
+            spend("Because", r[0], camp, "Meta", r[4], impr=r[5], reach=r[6], clicks=r[7], ag_leads=r[8], campaign=r[1])
 
 now = dt.datetime.utcnow() + dt.timedelta(hours=5, minutes=30)
 out = dict(taken=now.strftime("%d %b %Y, %I:%M %p IST"), today=now.date().isoformat(), campuses=campuses, channels=channels,
-           reasons=reasons, leads=L, students=S, fees=F, spend=SP, spend_upto=spend_upto)
+           reasons=reasons, labels=labels, leads=L, students=S, fees=F, spend=SP, spend_upto=spend_upto)
 json.dump(out, open(os.path.join(HERE, "audit.json"), "w"), separators=(",", ":"))
-print(len(L), "leads,", len(S), "paying students (", unmatched, "with no CRM lead ),", len(F), "fees,", len(SP), "spend days")
-print("junk/lost with reason:", sum(1 for x in L if x[8] and x[9] >= 0), "of", sum(x[8] for x in L))
+print(len(L), "leads,", len(S), "paying students (", unmatched, "with no CRM lead ),", len(F), "fees,", len(SP), "spend rows")
+print("junk/lost with reason:", sum(1 for x in L if x[8] and x[9] >= 0), "of", sum(x[8] for x in L), "| reasons:", reasons)
 print("revenue", sum(f[3] for f in F), "spend", round(sum(s[3] for s in SP)), spend_upto)
