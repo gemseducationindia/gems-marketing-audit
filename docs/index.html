@@ -152,7 +152,7 @@ tr.nolead td { color: var(--muted); font-style: italic; }
   <div class="campus-cards" id="campusCards"></div>
 
   <section class="defs">
-    <p><b>Dates</b>: leads, calls, visits and junk/lost count the leads <i>created</i> in the range (with everything done on them so far). Applications, enrollments, revenue and spend count what was <i>paid</i> in the range. <b>Spend</b> so far is Edelytics only (to its sheet's last day); other agencies show – until their sheets are added. <b>CAC % of revenue</b>: spend ÷ revenue for the same campus, channel and dates. <b>Impressions, clicks and agency-reported leads</b> come from the agency's sheet; CTR = clicks ÷ impressions. Compare agency-reported leads with the CRM's leads to see how many of their leads actually reached the CRM.</p>
+    <p><b>Dates</b>: leads, calls, visits and junk/lost count the leads <i>created</i> in the range (with everything done on them so far). Applications, enrollments, revenue and spend count what was <i>paid</i> in the range. <b>Spend</b> comes from the Edelytics and EchoVME sheets (each to its sheet's last day); Because shows – until its daily sheet is added. EchoVME doesn't report clicks, so CTR and cost/click show – for its campuses; its agency-reported leads come from lead-gen campaigns only. <b>CAC % of revenue</b>: spend ÷ revenue for the same campus, channel and dates. <b>Impressions, clicks and agency-reported leads</b> come from the agency's sheet; CTR = clicks ÷ impressions. Compare agency-reported leads with the CRM's leads to see how many of their leads actually reached the CRM.</p>
     <p><b>Leads</b>: every CRM lead (duplicates and leads with no campus excluded). <b>Channel</b>: Meta = Meta Ads, Instagram Ads, Facebook; Google = Google Ads; Website = Website Enquiry; Others = walk-in, referral, open house, events and the rest.</p>
     <p><b>Reached</b>: at least one outgoing call. <b>Dials</b>: outgoing calls, not counting a counsellor's outcome note logged right after an Exotel call. <b>Connect</b>: an answered call that lasted more than 0 seconds. <b>Connect rate</b>: connects ÷ dials.</p>
     <p><b>Visits scheduled / done</b>: a campus visit booked / marked done in the CRM. <b>Junk + lost</b>: lead status Junk or Lost.</p>
@@ -296,7 +296,7 @@ tr.nolead td { color: var(--muted); font-style: italic; }
     const first = [...data.leads.map((l) => l[0]), ...data.fees.map((f) => f[0]), ...data.spend.map((x) => x[0])].reduce((m, d) => (d < m ? d : m), today);
     const season = first;
     $("#asof").textContent = "AY 2027-28. CRM data as of " + data.taken + "; admissions entry sheet as of " + data.sheet_taken +
-      (data.spend_upto && data.spend_upto.Edelytics ? "; Edelytics spend to " + fmtDay(data.spend_upto.Edelytics) : "") + ".";
+      Object.entries(data.spend_upto || {}).map(([a, d]) => "; " + a + " spend to " + fmtDay(d)).join("") + ".";
 
     // Date range: inputs plus quick presets
     const dFrom = $("#dFrom"), dTo = $("#dTo");

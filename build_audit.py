@@ -1,7 +1,7 @@
 """Marketing audit data: one record per lead, per fee payment and per day of agency spend, so the page can
 recount any date range. No names, phone numbers or emails leave this script. Writes audit.json.
 
-Usage: python3 build_audit.py   (needs ~/.gems_crm_token, admissions.csv beside it; env EDELYTICS_SHEET for spend)
+Usage: python3 build_audit.py   (needs ~/.gems_crm_token, admissions.csv beside it; env EDELYTICS_SHEET, ECHOVME_SHEET for spend)
 """
 import csv, datetime as dt, io, json, os, re, time, urllib.parse, urllib.request, collections as C
 import openpyxl
@@ -150,6 +150,29 @@ if sheet:
                     SP.append([r[c].date().isoformat(), idx(campuses, camp), channels.index(ch), round(r[c + 3], 2),
                                n(r[c + 1]), n(r[c + 2]), n(r[c + 4])])
                     spend_upto["Edelytics"] = max(spend_upto.get("Edelytics", ""), r[c].date().isoformat())
+
+# EchoVME: a tab per month with side-by-side blocks per campus/platform/objective (no clicks). Same BLOCKS as the
+# leadership report's agencies/echovme.py: tab -> [(campus, channel, date col, spend col, impressions col, leads col)].
+ECHO_BLOCKS = {
+    "Sept": [("GEMS Millennium School - Raipur", "Meta", 0, 1, 3, None), ("GEMS Modern Academy - Coimbatore", "Meta", 0, 6, 8, None),
+             ("GEMS Millennium School - Raipur", "Google", 11, 12, 13, None), ("GEMS Modern Academy - Coimbatore", "Google", 11, 16, 17, None)],
+    "Oct": [("GEMS Millennium School - Raipur", "Meta", 0, 1, 3, None), ("GEMS Modern Academy - Coimbatore", "Meta", 0, 6, 8, None),
+            ("GEMS Modern Academy - Coimbatore", "Meta", 0, 11, None, 12),
+            ("GEMS Millennium School - Vikhroli", "Meta", 0, 15, 17, None), ("GEMS Millennium School - Kalyan", "Meta", 0, 20, 22, None),
+            ("GEMS Modern Academy - Coimbatore", "Google", 25, 26, 27, None), ("GEMS Modern Academy - Coimbatore", "Google", 25, 29, None, 30)],
+}
+sheet = os.environ.get("ECHOVME_SHEET")
+if sheet:
+    wb = openpyxl.load_workbook(io.BytesIO(urllib.request.urlopen(
+        f"https://docs.google.com/spreadsheets/d/{sheet}/export?format=xlsx", timeout=90).read()), data_only=True)
+    for tab, blocks in ECHO_BLOCKS.items():
+        if tab not in wb.sheetnames: print("missing EchoVME tab", tab); continue
+        for r in wb[tab].iter_rows(min_row=5, values_only=True):
+            for camp, ch, dc, sc, ic, lc in blocks:
+                v = lambda c: (r[c] if isinstance(r[c], (int, float)) else 0) if c is not None and c < len(r) else 0
+                if dc < len(r) and isinstance(r[dc], dt.datetime) and v(sc):
+                    SP.append([r[dc].date().isoformat(), idx(campuses, camp), channels.index(ch), round(v(sc), 2), v(ic), 0, v(lc)])
+                    spend_upto["EchoVME"] = max(spend_upto.get("EchoVME", ""), r[dc].date().isoformat())
 
 now = dt.datetime.utcnow() + dt.timedelta(hours=5, minutes=30)
 out = dict(taken=now.strftime("%d %b %Y, %I:%M %p IST"), today=now.date().isoformat(), campuses=campuses, channels=channels,
