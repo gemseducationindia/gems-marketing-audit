@@ -88,6 +88,16 @@ tr.nolead td { color: var(--muted); font-style: italic; }
 .chip[aria-pressed="true"] { background: var(--navy); border-color: var(--navy); color: #fff; }
 .chip .ag { font-size: 11px; opacity: .7; margin-left: 4px; }
 .campus-cards { display: grid; gap: 20px; }
+.daterow { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.range { display: inline-flex; align-items: stretch; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); overflow: hidden; }
+.range label { display: grid; gap: 1px; padding: 5px 12px; cursor: pointer; }
+.range label + label { border-left: 1px solid var(--line); }
+.range .cap { font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.range input { font: inherit; font-weight: 600; border: 0; background: transparent; color: var(--ink); padding: 0; min-width: 0; }
+.range input:focus-visible { outline: none; }
+.range label:focus-within { background: var(--total); }
+.range .arrow { display: grid; place-items: center; padding: 0 2px; color: var(--faint); border-left: 1px solid var(--line); }
+.span { font-size: 13px; color: var(--muted); }
 .reasons { display: grid; gap: 4px; padding-top: 4px; }
 .reasons h3 { font-size: 14px; font-weight: 600; margin: 0 0 4px; }
 .reasons ul { margin: 0; padding-left: 18px; display: grid; gap: 2px; }
@@ -125,23 +135,25 @@ tr.nolead td { color: var(--muted); font-style: italic; }
   </section>
 
   <section class="filters" aria-label="Filters">
+    <div class="frow daterow" id="dateRow"><span class="flabel">Dates</span>
+      <div class="range">
+        <label for="dFrom"><span class="cap">From</span><input type="date" id="dFrom"></label>
+        <label for="dTo"><span class="cap">To</span><input type="date" id="dTo"></label>
+      </div>
+      <span class="frow" id="presets"></span>
+      <span class="span" id="spanNote"></span>
+    </div>
     <div class="frow" id="agencyRow"><span class="flabel">Agency</span></div>
     <div class="frow" id="campusRow"><span class="flabel">Campus</span></div>
   </section>
 
   <section class="tiles" id="tiles"></section>
 
-  <section class="card">
-    <div class="card-head">
-      <div><h2>By channel</h2><p id="channelNote">Which channel turns leads into enrollments and revenue.</p></div>
-    </div>
-    <div class="scroll"><table id="channelTable"></table></div>
-  </section>
-
   <div class="campus-cards" id="campusCards"></div>
 
   <section class="defs">
-    <p><b>Leads</b>: every CRM lead (duplicates excluded). <b>Channel</b>: Meta = Meta Ads, Instagram Ads, Facebook; Google = Google Ads; Website = Website Enquiry; Others = walk-in, referral, open house, events and the rest.</p>
+    <p><b>Dates</b>: leads, calls, visits and junk/lost count the leads <i>created</i> in the range (with everything done on them so far). Applications, enrollments, revenue and spend count what was <i>paid</i> in the range. <b>Spend</b> so far is Edelytics only (to its sheet's last day); other agencies show – until their sheets are added.</p>
+    <p><b>Leads</b>: every CRM lead (duplicates and leads with no campus excluded). <b>Channel</b>: Meta = Meta Ads, Instagram Ads, Facebook; Google = Google Ads; Website = Website Enquiry; Others = walk-in, referral, open house, events and the rest.</p>
     <p><b>Reached</b>: at least one outgoing call. <b>Dials</b>: outgoing calls, not counting a counsellor's outcome note logged right after an Exotel call. <b>Connect</b>: an answered call that lasted more than 0 seconds. <b>Connect rate</b>: connects ÷ dials.</p>
     <p><b>Visits scheduled / done</b>: a campus visit booked / marked done in the CRM. <b>Junk + lost</b>: lead status Junk or Lost.</p>
     <p><b>Applications</b>: application fee paid. <b>Enrollments</b>: admission fee paid, or tuition/term fee paid where the admission fee was waived. <b>Revenue</b>: application + admission + tuition/term fees paid. These come from the admissions entry sheet and are matched to CRM leads by the parent's mobile number.</p>
@@ -208,18 +220,15 @@ tr.nolead td { color: var(--muted); font-style: italic; }
   const agencyOf = (c) => (NAMES[c] || [, "No agency"])[1];
   const AGENCIES = ["Edelytics", "Because", "EchoVME", "No agency"];
   const CH_ORDER = ["Meta", "Google", "Website", "Others"];
-  const N = ["leads", "reached", "dials", "connects", "sched", "visited", "junk_lost", "apps", "enrols", "revenue"];
+  const N = ["leads", "reached", "dials", "connects", "sched", "visited", "junk_lost", "apps", "enrols", "revenue", "spend"];
   const int = (n) => Math.round(n).toLocaleString("en-IN");
   const pct = (a, b) => (b ? (100 * a / b).toFixed(1) + "%" : null);
   const dec = (a, b) => (b ? (a / b).toFixed(2) : null);
   const inr = (n) => "₹" + Math.round(n).toLocaleString("en-IN");
   const lakh = (n) => n >= 1e5 ? "₹" + (n / 1e5).toFixed(1) + " L" : inr(n);
-
-  function sum(rows) {
-    const t = Object.fromEntries(N.map((k) => [k, 0]));
-    for (const r of rows) for (const k of N) t[k] += r[k] || 0;
-    return t;
-  }
+  const blank = () => Object.fromEntries(N.map((k) => [k, 0]));
+  const add = (t, x) => { for (const k of N) t[k] += x[k] || 0; return t; };
+  const sum = (list) => list.reduce(add, blank());
 
   const COLS = [
     ["Leads", (t) => int(t.leads)],
@@ -239,6 +248,9 @@ tr.nolead td { color: var(--muted); font-style: italic; }
     ["Lead → Enroll", (t) => pct(t.enrols, t.leads)],
     ["Revenue", (t) => inr(t.revenue), "bl"],
     ["Revenue / lead", (t) => t.leads ? inr(t.revenue / t.leads) : null],
+    ["Spend", (t) => t.spend ? inr(t.spend) : null, "bl"],
+    ["Cost / lead", (t) => t.spend && t.leads ? inr(t.spend / t.leads) : null],
+    ["Cost / enrollment", (t) => t.spend && t.enrols ? inr(t.spend / t.enrols) : null],
   ];
 
   function cell(tr, v, cls) {
@@ -267,68 +279,108 @@ tr.nolead td { color: var(--muted); font-style: italic; }
     return b;
   };
 
-  function render(data) {
-    const rows = data.rows.filter((r) => r.campus !== "Unassigned"), reasons = data.reasons || {};
-    $("#asof").textContent = "Season to date (AY 2027-28). CRM data live as of " + data.taken + "; admissions entry sheet as of " + data.sheet_taken + ".";
-    const campuses = [...new Set(rows.map((r) => r.campus))]
-      .sort((a, b) => sum(rows.filter((r) => r.campus === b)).leads - sum(rows.filter((r) => r.campus === a)).leads);
-    const picked = new Set();   // empty = all campuses
+  const fmtDay = (iso) => new Date(iso + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+  const shift = (iso, days) => { const d = new Date(iso + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().slice(0, 10); };
 
-    // Filter chips: an agency selects all its schools; campuses toggle one by one
+  function render(data) {
+    const C = data.campuses, CH = data.channels, R = data.reasons;
+    const ok = (ci) => C[ci] && C[ci] !== "Unassigned";
+    const today = data.today, season = data.leads.reduce((m, l) => (l[0] < m ? l[0] : m), today);
+    const first = [season, ...data.fees.map((f) => f[0]), ...data.spend.map((x) => x[0])].reduce((m, d) => (d < m ? d : m), season);
+    $("#asof").textContent = "AY 2027-28. CRM data as of " + data.taken + "; admissions entry sheet as of " + data.sheet_taken +
+      (data.spend_upto && data.spend_upto.Edelytics ? "; Edelytics spend to " + fmtDay(data.spend_upto.Edelytics) : "") + ".";
+
+    // Date range: inputs plus quick presets
+    const dFrom = $("#dFrom"), dTo = $("#dTo");
+    for (const el of [dFrom, dTo]) { el.min = first; el.max = today; }
+    dFrom.value = season; dTo.value = today;
+    const monthStart = today.slice(0, 8) + "01";
+    const lastMonthEnd = shift(monthStart, -1), lastMonthStart = lastMonthEnd.slice(0, 8) + "01";
+    const PRESETS = [["Season to date", season, today], ["Today", today, today], ["Yesterday", shift(today, -1), shift(today, -1)],
+      ["Last 7 days", shift(today, -6), today], ["Last 30 days", shift(today, -29), today], ["This month", monthStart, today],
+      ["Last month", lastMonthStart, lastMonthEnd]];
+    const pr = $("#presets"); pr.textContent = "";
+    const pBtns = PRESETS.map(([label, f, t]) => { const b = chip(label); b.onclick = () => { dFrom.value = f; dTo.value = t; sync(); }; pr.append(b); return [b, f, t]; });
+
+    // Campus and agency chips
+    const leadCount = C.map(() => 0); for (const l of data.leads) leadCount[l[1]]++;
+    const campuses = C.map((c, i) => i).filter(ok).sort((a, b) => leadCount[b] - leadCount[a]);
+    const picked = new Set();
     const ar = $("#agencyRow"), cr = $("#campusRow");
     ar.querySelectorAll(".chip").forEach((e) => e.remove()); cr.querySelectorAll(".chip").forEach((e) => e.remove());
     const allBtn = chip("All campuses"); ar.append(allBtn);
     const agBtns = {};
-    for (const a of AGENCIES) { if (!campuses.some((c) => agencyOf(c) === a)) continue; agBtns[a] = chip(a); ar.append(agBtns[a]); }
+    for (const a of AGENCIES) { if (!campuses.some((ci) => agencyOf(C[ci]) === a)) continue; agBtns[a] = chip(a); ar.append(agBtns[a]); }
     const cBtns = {};
-    for (const c of campuses) { cBtns[c] = chip(short(c), agencyOf(c) === "No agency" ? "" : agencyOf(c)); cr.append(cBtns[c]); }
-    const sync = () => {
+    for (const ci of campuses) { cBtns[ci] = chip(short(C[ci]), agencyOf(C[ci]) === "No agency" ? "" : agencyOf(C[ci])); cr.append(cBtns[ci]); }
+
+    function sync() {
+      if (dFrom.value && dTo.value && dFrom.value > dTo.value) [dFrom.value, dTo.value] = [dTo.value, dFrom.value];
+      for (const [b, f, t] of pBtns) b.setAttribute("aria-pressed", String(dFrom.value === f && dTo.value === t));
       allBtn.setAttribute("aria-pressed", String(picked.size === 0));
       for (const [a, b] of Object.entries(agBtns)) {
-        const mine = campuses.filter((c) => agencyOf(c) === a);
-        b.setAttribute("aria-pressed", String(picked.size > 0 && mine.every((c) => picked.has(c)) && picked.size === mine.length));
+        const mine = campuses.filter((ci) => agencyOf(C[ci]) === a);
+        b.setAttribute("aria-pressed", String(picked.size === mine.length && mine.every((ci) => picked.has(ci))));
       }
-      for (const [c, b] of Object.entries(cBtns)) b.setAttribute("aria-pressed", String(picked.has(c)));
+      for (const [ci, b] of Object.entries(cBtns)) b.setAttribute("aria-pressed", String(picked.has(+ci)));
       draw();
-    };
+    }
     allBtn.onclick = () => { picked.clear(); sync(); };
-    for (const [a, b] of Object.entries(agBtns)) b.onclick = () => { picked.clear(); campuses.filter((c) => agencyOf(c) === a).forEach((c) => picked.add(c)); sync(); };
-    for (const [c, b] of Object.entries(cBtns)) b.onclick = () => { picked.has(c) ? picked.delete(c) : picked.add(c); sync(); };
+    for (const [a, b] of Object.entries(agBtns)) b.onclick = () => { picked.clear(); campuses.filter((ci) => agencyOf(C[ci]) === a).forEach((ci) => picked.add(ci)); sync(); };
+    for (const [ci, b] of Object.entries(cBtns)) b.onclick = () => { picked.has(+ci) ? picked.delete(+ci) : picked.add(+ci); sync(); };
+    dFrom.onchange = sync; dTo.onchange = sync;
 
     function draw() {
-      const sel = campuses.filter((c) => picked.size === 0 || picked.has(c));
-      const rs = rows.filter((r) => sel.includes(r.campus));
-      const all = sum(rs);
-      const scope = picked.size === 0 ? "All campuses" : sel.map(short).join(", ");
+      const from = dFrom.value || first, to = dTo.value || today;
+      const inR = (d) => d && d >= from && d <= to;
+      const days = Math.round((new Date(to) - new Date(from)) / 864e5) + 1;
+      $("#spanNote").textContent = fmtDay(from) + " – " + fmtDay(to) + " · " + days + (days === 1 ? " day" : " days");
+      const sel = campuses.filter((ci) => picked.size === 0 || picked.has(ci));
+      const selSet = new Set(sel);
 
-      const tk = $("#takeaway"); tk.textContent = "";
-      tk.append(document.createTextNode(scope + ": " + int(all.leads) + " leads, " + int(all.visited) + " campus visits, " + int(all.enrols) +
-        " enrollments (" + (pct(all.enrols, all.leads) || "–") + " of leads) and " + lakh(all.revenue) + " revenue so far."));
+      // Aggregate per campus x channel, and junk/lost reasons per campus
+      const grid = {}, why = {};
+      const at = (ci, ch) => (grid[ci + "|" + ch] ||= blank());
+      for (const l of data.leads) {
+        if (!selSet.has(l[1]) || !inR(l[0])) continue;
+        add(at(l[1], l[2]), { leads: 1, reached: l[3], dials: l[4], connects: l[5], sched: l[6], visited: l[7], junk_lost: l[8] });
+        if (l[8] && l[9] >= 0) { const w = (why[l[1]] ||= {}); w[R[l[9]]] = (w[R[l[9]]] || 0) + 1; }
+      }
+      for (const s of data.students) {
+        if (!selSet.has(s[0])) continue;
+        if (inR(s[2])) at(s[0], s[1]).apps++;
+        if (inR(s[3])) at(s[0], s[1]).enrols++;
+      }
+      for (const f of data.fees) if (selSet.has(f[1]) && inR(f[0])) at(f[1], f[2]).revenue += f[3];
+      for (const x of data.spend) if (selSet.has(x[1]) && inR(x[0])) at(x[1], x[2]).spend += x[3];
+      const of = (ci, ch) => grid[ci + "|" + ch] || blank();
+      const camp = (ci) => sum(CH.map((_, h) => of(ci, h)));
+      const all = sum(sel.map(camp));
+      const scope = picked.size === 0 ? "All campuses" : sel.map((ci) => short(C[ci])).join(", ");
+
+      const tk = $("#takeaway"); tk.textContent = scope + ", " + fmtDay(from) + " – " + fmtDay(to) + ": " + int(all.leads) + " leads, " +
+        int(all.visited) + " campus visits, " + int(all.enrols) + " enrollments and " + lakh(all.revenue) + " revenue" +
+        (all.spend ? " against " + lakh(all.spend) + " spend." : ".");
 
       const tiles = [
-        ["Leads", int(all.leads), "in the CRM"],
+        ["Leads", int(all.leads), "created in range"],
         ["Reached", pct(all.reached, all.leads) || "–", int(all.reached) + " leads called"],
         ["Visits done", int(all.visited), (pct(all.visited, all.leads) || "–") + " of leads"],
         ["Applications", int(all.apps), "application fee paid"],
         ["Enrollments", int(all.enrols), "admission or term fee paid"],
-        ["Revenue", lakh(all.revenue), "all fees paid"],
+        ["Revenue", lakh(all.revenue), "fees paid in range"],
+        ["Spend", all.spend ? lakh(all.spend) : "–", all.spend && all.enrols ? inr(all.spend / all.enrols) + " per enrollment" : "agency sheets added so far"],
       ];
       const tw = $("#tiles"); tw.textContent = "";
-      for (const [k, v, s] of tiles) {
+      for (const [k, v, s2] of tiles) {
         const d = document.createElement("div"); d.className = "tile";
-        for (const [c, txt] of [["k", k], ["v", v], ["s", s]]) { const e = document.createElement("div"); e.className = c; e.textContent = txt; d.append(e); }
+        for (const [c, txt] of [["k", k], ["v", v], ["s", s2]]) { const e = document.createElement("div"); e.className = c; e.textContent = txt; d.append(e); }
         tw.append(d);
       }
 
-      $("#channelNote").textContent = scope + ". Which channel turns leads into enrollments and revenue.";
-      const ct = $("#channelTable"); ct.textContent = ""; header(ct, ["Channel"]);
-      const tb = document.createElement("tbody");
-      for (const ch of CH_ORDER) { const x = rs.filter((r) => r.channel === ch); if (x.length) row(tb, [ch], sum(x)); }
-      row(tb, ["All channels"], all, "total"); ct.append(tb);
-
       const cards = $("#campusCards"); cards.textContent = "";
-      for (const c of sel) {
-        const x = rows.filter((r) => r.campus === c);
+      for (const ci of sel) {
+        const c = C[ci];
         const card = document.createElement("section"); card.className = "card"; card.id = "campus-" + short(c).replace(/\W+/g, "-").toLowerCase();
         const head = document.createElement("div"); head.className = "card-head";
         const hd = document.createElement("div"); const h = document.createElement("h2"); h.textContent = short(c);
@@ -337,19 +389,19 @@ tr.nolead td { color: var(--muted); font-style: italic; }
         const wrap = document.createElement("div"); wrap.className = "scroll";
         const t = document.createElement("table"); header(t, ["Channel"]);
         const body = document.createElement("tbody");
-        for (const ch of CH_ORDER) { const y = x.filter((r) => r.channel === ch); if (y.length) row(body, [ch], sum(y)); }
-        row(body, ["All channels"], sum(x), "total");
+        CH.forEach((ch, h2) => row(body, [ch], of(ci, h2)));
+        row(body, ["All channels"], camp(ci), "total");
         t.append(body); wrap.append(t); card.append(wrap);
 
         const rb = document.createElement("div"); rb.className = "reasons";
-        const list = reasons[c] || [];
-        const total = list.reduce((s, [, n]) => s + n, 0);
+        const list = Object.entries(why[ci] || {}).sort((a, b) => b[1] - a[1]);
+        const total = list.reduce((s2, [, n]) => s2 + n, 0);
         const h3 = document.createElement("h3");
-        h3.textContent = total ? "Why " + int(total) + " leads were marked junk or lost" : "No leads marked junk or lost yet";
+        h3.textContent = total ? "Why " + int(total) + (total === 1 ? " lead was" : " leads were") + " marked junk or lost" : "No leads marked junk or lost in this range";
         rb.append(h3);
         if (total) {
           const ul = document.createElement("ul");
-          for (const [r, n] of list.slice(0, 4)) { const li = document.createElement("li"); li.textContent = r + ": " + int(n) + " (" + pct(n, total) + ")"; ul.append(li); }
+          for (const [r, n] of list.slice(0, 5)) { const li = document.createElement("li"); li.textContent = r + ": " + int(n) + " (" + pct(n, total) + ")"; ul.append(li); }
           rb.append(ul);
         }
         card.append(rb); cards.append(card);

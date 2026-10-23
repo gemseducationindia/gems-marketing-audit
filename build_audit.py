@@ -1,5 +1,10 @@
-"""Marketing audit: campus x channel funnel from the live CRM + the admissions entry sheet -> audit.json (no PII)."""
-import csv, datetime as dt, json, os, sys, time, urllib.parse, urllib.request, collections as C
+"""Marketing audit data: one record per lead, per fee payment and per day of agency spend, so the page can
+recount any date range. No names, phone numbers or emails leave this script. Writes audit.json.
+
+Usage: python3 build_audit.py   (needs ~/.gems_crm_token, admissions.csv beside it; env EDELYTICS_SHEET for spend)
+"""
+import csv, datetime as dt, io, json, os, re, time, urllib.parse, urllib.request, collections as C
+import openpyxl
 
 B = "https://gemseducation.m.frappe.cloud"
 T = open(os.path.expanduser("~/.gems_crm_token")).read().strip()
@@ -29,22 +34,31 @@ CHANNEL = {"Meta Ads": "Meta", "Instagram Ads": "Meta", "Facebook": "Meta", "Goo
 channel = lambda src: CHANNEL.get(src or "", "Others")
 CAMPUS_ALIAS = {"Cresmonde World School - Vikhroli": "GEMS Millennium School - Vikhroli",
                 "Cresmonde World School - Kalyan": "GEMS Millennium School - Kalyan"}
+SHORT = {"GMS": "GEMS Millennium School", "GMA": "GEMS Modern Academy", "GSE": "GEMS School of Excellence"}
+REASON = {"not iooking for admissions": "Not looking for admission", "not inetersted": "Not looking for admission",
+          "not interested": "Not looking for admission", "invalid": "Duplicate or invalid enquiry",
+          "wrong number": "Duplicate or invalid enquiry", "testing": "Duplicate or invalid enquiry",
+          "applied mistakenly": "Duplicate or invalid enquiry", "international number": "Duplicate or invalid enquiry",
+          "he is part of school": "Duplicate or invalid enquiry", "looking for job": "Looking for a job, not admission",
+          "interested only if she gets a job in gems": "Looking for a job, not admission",
+          "no seat in requested grade": "Grade not available", "prefer cbse": "Curriculum mismatch",
+          "state to cbse issue": "Curriculum mismatch"}
 
-leads = get("CRM Lead", ["name", "creation", "source", "territory", "status", "is_duplicate", "visit_state", "visit_done_on", "mobile_no", "phone",
-                         "lost_reason"])
+leads = get("CRM Lead", ["name", "creation", "source", "territory", "status", "is_duplicate", "visit_state", "visit_done_on",
+                         "mobile_no", "phone", "lost_reason"])
 visits = get("GEMS Visit", ["enquiry", "status"])
 calls = get("CRM Call Log", ["type", "status", "duration", "telephony_medium", "reference_docname", "to", "start_time", "creation"],
             [["type", "=", "Outgoing"]])
 print("leads", len(leads), "visits", len(visits), "outgoing calls", len(calls))
 
-leads = [l for l in leads if not l["is_duplicate"]]
+# Leads with no campus are left out of the report entirely
+leads = [l for l in leads if not l["is_duplicate"] and l["territory"]]
 ix = {l["name"]: l for l in leads}
 by_phone = C.defaultdict(list)
 for l in leads:
     for p in {d10(l["mobile_no"]), d10(l["phone"])} - {None}:
         by_phone[p].append(l)
 
-# Visits per lead (GEMS Visit, or the lead's visit state as the CRM's fallback)
 vs, vd = set(), set()
 for v in visits:
     if v["enquiry"] in ix:
@@ -54,8 +68,7 @@ for l in leads:
     if l["visit_state"] in ("Booked", "Attended", "No show"): vs.add(l["name"])
     if l["visit_state"] == "Attended" or l["visit_done_on"]: vd.add(l["name"]); vs.add(l["name"])
 
-# Dials: every outgoing call, except a manual log within 15 min of an Exotel call to the same number
-# (that is the counsellor logging the outcome of the same call, not a second dial).
+# Dials: outgoing calls, except a manual outcome note logged within 15 min of an Exotel call to the same number
 ts = lambda c: dt.datetime.fromisoformat((c["start_time"] or c["creation"])[:19])
 exo_at = C.defaultdict(list)
 for c in calls:
@@ -69,61 +82,76 @@ for c in calls:
         dials[i] += 1
         if c["status"] == "Completed" and (c["duration"] or 0) > 0: conns[i] += 1
 
-# Admissions sheet: one row per student (exact duplicate submissions collapse)
+campuses, channels, reasons = [], ["Meta", "Google", "Website", "Others"], []
+idx = lambda lst, v: lst.index(v) if v in lst else (lst.append(v) or len(lst) - 1)
+
+# Leads: [created on, campus, channel, reached, dials, connects, visit scheduled, visit done, junk/lost, reason or -1]
+L = []
+for l in leads:
+    i, jl = l["name"], l["status"] in ("Junk", "Lost")
+    r = -1
+    if jl:
+        txt = (l["lost_reason"] or "").strip() or "Not recorded"
+        r = idx(reasons, REASON.get(txt.lower(), txt))
+    L.append([l["creation"][:10], idx(campuses, l["territory"]), channels.index(channel(l["source"])), int(dials[i] > 0),
+              dials[i], conns[i], int(i in vs), int(i in vd), int(jl), r])
+
+# Admissions sheet: one entry per student; each fee counts on its own payment date
+def pdate(s):
+    s = (s or "").strip()
+    for f in ("%d/%m/%y", "%d/%m/%Y"):
+        try: return dt.datetime.strptime(s, f).date().isoformat()
+        except ValueError: pass
+    return None
 num = lambda v: float(str(v).replace(",", "").strip() or 0)
 yes = lambda v: (v or "").strip().lower() == "yes"
-students, unmatched = {}, []
-with open(os.path.join(HERE, "admissions.csv"), newline="", encoding="utf-8") as f:
+students = {}
+with open(os.path.join(HERE, "admissions.csv"), newline="", encoding="utf-8") as f:   # export of the admissions entry sheet; never committed
     for r in csv.DictReader(f):
         campus = CAMPUS_ALIAS.get(r["Campus"].strip(), r["Campus"].strip())
         ph = d10(r["Parent phone number (10 digits, without +91)"])
-        key = (campus, r["Student name"].strip().lower(), ph)
-        app, adm, tui = yes(r["Application fee paid?"]), yes(r["Admission fee paid?"]), yes(r["Tuition / term fee paid?"])
-        rev = (num(r["Application fee amount paid (₹)"]) if app else 0) + (num(r["Admission fee amount paid (₹)"]) if adm else 0) \
-            + (num(r["Tuition / term fee amount paid (₹)"]) if tui else 0)
-        students[key] = dict(campus=campus, phone=ph, app=app, enrol=adm or tui, rev=rev)
+        students[(campus, r["Student name"].strip().lower(), ph)] = (campus, ph, r)
 
-stats = C.defaultdict(lambda: C.Counter())
-def add(campus, ch, **kv):
-    for k, v in kv.items(): stats[(campus, ch)][k] += v
+S, F, unmatched = [], [], 0
+for campus, ph, r in students.values():
+    fees = [(k, pdate(r[f"{label} fee payment date (DD/MM/YYYY)"]), num(r[f"{label} fee amount paid (₹)"]))
+            for k, label in (("app", "Application"), ("adm", "Admission"), ("tui", "Tuition / term"))
+            if yes(r[f"{label} fee paid?" if label != "Tuition / term" else "Tuition / term fee paid?"])]
+    if not fees: continue
+    cands = by_phone.get(ph, [])
+    lead = next((l for l in cands if l["territory"] == campus), cands[0] if cands else None)
+    unmatched += lead is None
+    ci, ch = idx(campuses, campus), channels.index(channel(lead["source"]) if lead else "Others")  # no CRM lead -> Others
+    app = next((d for k, d, _ in fees if k == "app"), None)
+    enrol = min([d for k, d, _ in fees if k in ("adm", "tui") and d] or [None])
+    # Students: [campus, channel, application date or null, enrollment date or null]
+    S.append([ci, ch, app, enrol])
+    # Fees: [paid on, campus, channel, amount]
+    F += [[d, ci, ch, a] for _, d, a in fees if d and a]
 
-for l in leads:
-    i, camp, ch = l["name"], l["territory"] or "Unassigned", channel(l["source"])
-    add(camp, ch, leads=1, reached=int(dials[i] > 0), dials=dials[i], connects=conns[i],
-        sched=int(i in vs), visited=int(i in vd), junk_lost=int(l["status"] in ("Junk", "Lost")))
+# Agency spend per day. Edelytics: one tab per campus (e.g. "GMS Gurugram"), Google Ads in A-F, Meta Ads in H-M.
+SP, spend_upto = [], {}
+def campus_of(tab):
+    p = tab.strip().split(" ", 1)
+    name = f"{SHORT.get(p[0], p[0])} - {p[1]}" if len(p) == 2 else tab
+    return name if name in campuses or any(l["territory"] == name for l in leads) else None
+sheet = os.environ.get("EDELYTICS_SHEET")
+if sheet:
+    wb = openpyxl.load_workbook(io.BytesIO(urllib.request.urlopen(
+        f"https://docs.google.com/spreadsheets/d/{sheet}/export?format=xlsx", timeout=90).read()), data_only=True)
+    for ws in wb:
+        camp = campus_of(ws.title)
+        if not camp: print("skipping Edelytics tab", ws.title); continue
+        for r in ws.iter_rows(values_only=True):
+            for ch, c in (("Google", 0), ("Meta", 7)):
+                if len(r) > c + 3 and isinstance(r[c], dt.datetime) and isinstance(r[c + 3], (int, float)) and r[c + 3]:
+                    SP.append([r[c].date().isoformat(), idx(campuses, camp), channels.index(ch), round(r[c + 3], 2)])
+                    spend_upto["Edelytics"] = max(spend_upto.get("Edelytics", ""), r[c].date().isoformat())
 
-match_stats = C.Counter()
-for s in students.values():
-    if not (s["app"] or s["enrol"] or s["rev"]): continue
-    cands = by_phone.get(s["phone"], [])
-    lead = next((l for l in cands if l["territory"] == s["campus"]), cands[0] if cands else None)
-    ch = channel(lead["source"]) if lead else "Others"   # paying students with no CRM lead count as Others
-    match_stats["matched" if lead else "unmatched"] += 1
-    add(s["campus"], ch, apps=int(s["app"]), enrols=int(s["enrol"]), revenue=s["rev"])
-
-# Junk/lost reasons per campus; free-text variants folded into the CRM's own reasons
-REASON = {"not iooking for admissions": "Not looking for admission", "not inetersted": "Not looking for admission",
-          "not interested": "Not looking for admission", "invalid": "Duplicate or invalid enquiry",
-          "wrong number": "Duplicate or invalid enquiry", "testing": "Duplicate or invalid enquiry",
-          "applied mistakenly": "Duplicate or invalid enquiry", "international number": "Duplicate or invalid enquiry",
-          "he is part of school": "Duplicate or invalid enquiry", "looking for job": "Looking for a job, not admission",
-          "interested only if she gets a job in gems": "Looking for a job, not admission",
-          "no seat in requested grade": "Grade not available", "prefer cbse": "Curriculum mismatch",
-          "state to cbse issue": "Curriculum mismatch"}
-reasons = C.defaultdict(C.Counter)
-for l in leads:
-    if l["status"] in ("Junk", "Lost"):
-        r = (l["lost_reason"] or "").strip() or "Not recorded"
-        reasons[l["territory"] or "Unassigned"][REASON.get(r.lower(), r)] += 1
-
-rows = [dict(campus=k[0], channel=k[1], **{f: v.get(f, 0) for f in ("leads", "reached", "dials", "connects", "sched", "visited",
-                                                                  "junk_lost", "apps", "enrols", "revenue")}) for k, v in stats.items()]
-out = dict(taken=(dt.datetime.utcnow() + dt.timedelta(hours=5, minutes=30)).strftime("%d %b %Y, %I:%M %p IST"),
-           rows=rows, reasons={c: r.most_common() for c, r in reasons.items()}, students=len(students), match=dict(match_stats))
-json.dump(out, open(os.path.join(HERE, "audit.json"), "w"), indent=1)
-print(json.dumps(out["match"]), len(students), "students;", len(rows), "campus x channel rows")
-tot = C.Counter()
-for r in rows:
-    for k, v in r.items():
-        if isinstance(v, (int, float)): tot[k] += v
-print(dict(tot))
+now = dt.datetime.utcnow() + dt.timedelta(hours=5, minutes=30)
+out = dict(taken=now.strftime("%d %b %Y, %I:%M %p IST"), today=now.date().isoformat(), campuses=campuses, channels=channels,
+           reasons=reasons, leads=L, students=S, fees=F, spend=SP, spend_upto=spend_upto)
+json.dump(out, open(os.path.join(HERE, "audit.json"), "w"), separators=(",", ":"))
+print(len(L), "leads,", len(S), "paying students (", unmatched, "with no CRM lead ),", len(F), "fees,", len(SP), "spend days")
+print("junk/lost with reason:", sum(1 for x in L if x[8] and x[9] >= 0), "of", sum(x[8] for x in L))
+print("revenue", sum(f[3] for f in F), "spend", round(sum(s[3] for s in SP)), spend_upto)
