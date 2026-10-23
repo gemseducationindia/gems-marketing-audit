@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>GEMS Marketing Audit</title>
+<link rel="icon" href="favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Encode+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* GEMS palette (navy #041E42, cyan #00A3E0), Encode Sans, light and dark — same tokens as the leadership report. */
+:root {
+  --navy: #041E42; --accent: #00A3E0; --accent-ink: #00739E;
+  --bg: #F7F8FA; --surface: #FFFFFF; --subtle: #F1F3F6; --line: #E3E7EC; --ink: #1D2430; --muted: #5F6B7A; --faint: #8A94A3;
+  --good: #1E7B4F; --bad: #B4232A; --total: #EAF1F8;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E141C; --surface: #151D28; --subtle: #1B2532; --line: #273343; --ink: #E6EAF0; --muted: #A3AEBD; --faint: #7D899A;
+    --accent-ink: #5CC8F0; --good: #4CC38A; --bad: #F07178; --total: #1A2A3C; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E141C; --surface: #151D28; --subtle: #1B2532; --line: #273343; --ink: #E6EAF0; --muted: #A3AEBD; --faint: #7D899A;
+  --accent-ink: #5CC8F0; --good: #4CC38A; --bad: #F07178; --total: #1A2A3C; color-scheme: dark;
+}
+[hidden] { display: none !important; }
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 "Encode Sans", system-ui, -apple-system, "Segoe UI", sans-serif; }
+.muted { color: var(--muted); }
+.brand { display: inline-flex; gap: 8px; align-items: baseline; font-weight: 600; color: #fff; font-size: 16px; }
+.brand .mark { background: var(--accent); color: var(--navy); padding: 1px 7px; border-radius: 4px; font-weight: 700; letter-spacing: .04em; }
+.brand-lg { font-size: 20px; color: var(--ink); }
+.btn { font: inherit; border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 7px 14px; border-radius: 6px; cursor: pointer; }
+.btn:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn-primary { background: var(--navy); color: #fff; border-color: var(--navy); width: 100%; }
+.btn-ghost { background: transparent; color: #fff; border-color: rgba(255,255,255,.35); }
+
+#gate { min-height: 100vh; display: grid; place-items: center; padding-block: 16px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+#gateForm { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 28px; width: 100%; max-width: 360px; display: grid; gap: 12px; }
+#gateForm input[type=password] { font: inherit; padding: 9px 11px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); }
+.check { display: flex; gap: 8px; align-items: center; color: var(--muted); font-size: 13px; }
+.err { color: var(--bad); font-size: 13px; min-height: 1em; }
+
+header { background: var(--navy); position: sticky; top: 0; z-index: 5; }
+.top-inner { max-width: 1400px; margin: 0 auto; padding-block: 10px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; gap: 16px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+main { max-width: 1400px; margin: 0 auto; padding-block: 20px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 20px; }
+
+h1 { font-size: 22px; font-weight: 600; margin: 0; text-wrap: balance; }
+h2 { font-size: 16px; font-weight: 600; margin: 0; }
+.lede { margin: 4px 0 0; color: var(--muted); max-width: 75ch; }
+.takeaway { margin: 8px 0 0; max-width: 75ch; }
+.takeaway b { color: var(--bad); }
+
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; display: grid; gap: 2px; }
+.tile .k { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.tile .v { font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.tile .s { font-size: 12px; color: var(--muted); }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px; display: grid; gap: 10px; min-width: 0; }
+.card-head { display: flex; gap: 12px; align-items: end; justify-content: space-between; flex-wrap: wrap; }
+.card-head p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+select { font: inherit; padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); }
+
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 13px; }
+th, td { padding: 7px 10px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--line); }
+th { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; background: var(--subtle); position: sticky; top: 0; }
+th.grp { text-align: center; border-left: 1px solid var(--line); }
+.l { text-align: left; }
+td.first, th.first { position: sticky; left: 0; background: var(--surface); z-index: 1; text-align: left; }
+th.first { background: var(--subtle); z-index: 2; }
+.bl { border-left: 1px solid var(--line); }
+tr.total td { background: var(--total); font-weight: 600; }
+tr.total td.first { background: var(--total); }
+tr.campus-start td { border-top: 2px solid var(--line); }
+td .pct { color: var(--muted); font-weight: 400; font-size: 12px; }
+td.na { color: var(--faint); }
+tr.nolead td { color: var(--muted); font-style: italic; }
+.defs { font-size: 13px; color: var(--muted); display: grid; gap: 4px; max-width: 110ch; }
+.defs p { margin: 0; }
+.defs b { color: var(--ink); font-weight: 600; }
+</style>
+</head>
+<body>
+<div id="gate" hidden>
+  <form id="gateForm" autocomplete="off">
+    <div class="brand brand-lg"><span class="mark">GEMS</span><span>Marketing Audit</span></div>
+    <p class="muted">This report is encrypted. Enter the password to open it.</p>
+    <input type="password" id="pw" placeholder="Password" autocomplete="current-password" required>
+    <label class="check"><input type="checkbox" id="remember"> Stay unlocked on this device</label>
+    <button type="submit" class="btn btn-primary">Unlock</button>
+    <div class="err" id="gateErr" role="alert"></div>
+  </form>
+</div>
+
+<header id="top" hidden>
+  <div class="top-inner">
+    <span class="brand"><span class="mark">GEMS</span><span>Marketing Audit</span></span>
+    <button class="btn btn-ghost" id="lock">Lock</button>
+  </div>
+</header>
+
+<main id="view" hidden>
+  <section>
+    <h1>Lead to enrollment, by campus and channel</h1>
+    <p class="lede" id="asof"></p>
+    <p class="takeaway" id="takeaway"></p>
+  </section>
+
+  <section class="tiles" id="tiles"></section>
+
+  <section class="card">
+    <div class="card-head">
+      <div><h2>By channel, all campuses</h2><p>Which channel turns leads into enrollments and revenue.</p></div>
+    </div>
+    <div class="scroll"><table id="channelTable"></table></div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <div><h2>By campus and channel</h2><p>Each campus total first, then its channels.</p></div>
+      <label class="muted" for="campusSel">Campus <select id="campusSel"><option value="">All campuses</option></select></label>
+    </div>
+    <div class="scroll"><table id="campusTable"></table></div>
+  </section>
+
+  <section class="defs">
+    <p><b>Leads</b>: every CRM lead (duplicates excluded). <b>Channel</b>: Meta = Meta Ads, Instagram Ads, Facebook; Google = Google Ads; Website = Website Enquiry; Others = walk-in, referral, open house, events and the rest.</p>
+    <p><b>Reached</b>: at least one outgoing call. <b>Dials</b>: outgoing calls, not counting a counsellor's outcome note logged right after an Exotel call. <b>Connect</b>: an answered call that lasted more than 0 seconds. <b>Connect rate</b>: connects ÷ dials.</p>
+    <p><b>Visits scheduled / done</b>: a campus visit booked / marked done in the CRM. <b>Junk + lost</b>: lead status Junk or Lost.</p>
+    <p><b>Applications</b>: application fee paid. <b>Enrollments</b>: admission fee paid, or tuition/term fee paid where the admission fee was waived. <b>Revenue</b>: application + admission + tuition/term fees paid. These come from the admissions entry sheet and are matched to CRM leads by the parent's mobile number.</p>
+    <p><b>No CRM lead</b>: paying students whose number matches no CRM lead, so no channel can be credited. They count in every total, but conversion rates and revenue per lead use only students matched to a lead.</p>
+  </section>
+</main>
+
+<script>
+(() => {
+  "use strict";
+  const $ = (s) => document.querySelector(s);
+  const b64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+  const toB64 = (u) => btoa(String.fromCharCode(...new Uint8Array(u)));
+  const STORE = "gems-marketing-audit-key";
+  let KEY = null;
+
+  const store = { get() { try { return localStorage.getItem(STORE); } catch (e) { return null; } },
+                  set(v) { try { localStorage.setItem(STORE, v); } catch (e) {} },
+                  clear() { try { localStorage.removeItem(STORE); } catch (e) {} } };
+
+  async function derive(pass) {
+    const k = await (await fetch("key.json", { cache: "no-store" })).json();
+    const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(pass), "PBKDF2", false, ["deriveBits"]);
+    return crypto.subtle.deriveBits({ name: "PBKDF2", salt: b64(k.salt), iterations: k.iter, hash: "SHA-256" }, base, 256);
+  }
+  async function open(raw) {
+    KEY = await crypto.subtle.importKey("raw", raw, "AES-GCM", false, ["decrypt"]);
+    const b = new Uint8Array(await (await fetch("data.enc", { cache: "no-store" })).arrayBuffer());
+    const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: b.slice(0, 12) }, KEY, b.slice(12));
+    const ds = new Blob([plain]).stream().pipeThrough(new DecompressionStream("gzip"));
+    return JSON.parse(await new Response(ds).text());
+  }
+
+  const showGate = () => { $("#gate").hidden = false; $("#top").hidden = true; $("#view").hidden = true; $("#pw").focus(); };
+  const showReport = (data) => { $("#gate").hidden = true; $("#top").hidden = false; $("#view").hidden = false; render(data); };
+
+  $("#gateForm").addEventListener("submit", async (e) => {
+    e.preventDefault(); $("#gateErr").textContent = "";
+    try {
+      const raw = await derive($("#pw").value);
+      const data = await open(raw);
+      if ($("#remember").checked) store.set(toB64(raw));
+      showReport(data);
+    } catch (err) { $("#gateErr").textContent = "That password didn't open the report. Check it and try again."; }
+  });
+  $("#lock").addEventListener("click", () => { store.clear(); KEY = null; $("#pw").value = ""; showGate(); });
+
+  (async () => {
+    const saved = store.get();
+    if (saved) { try { showReport(await open(b64(saved))); return; } catch (e) { store.clear(); } }
+    showGate();
+  })();
+
+  // ---------- report ----------
+  const SHORT = { "GEMS Millennium School": "GMS", "GEMS Modern Academy": "GMA", "GEMS School of Excellence": "GSE" };
+  const short = (c) => { for (const [k, v] of Object.entries(SHORT)) if (c.startsWith(k + " - ")) return v + " " + c.slice(k.length + 3); return c; };
+  const CH_ORDER = ["Meta", "Google", "Website", "Others", "No CRM lead"];
+  const N = ["leads", "reached", "dials", "connects", "sched", "visited", "junk_lost", "apps", "enrols", "revenue"];
+  const int = (n) => Math.round(n).toLocaleString("en-IN");
+  const pct = (a, b) => (b ? (100 * a / b).toFixed(1) + "%" : null);
+  const dec = (a, b) => (b ? (a / b).toFixed(2) : null);
+  const inr = (n) => "₹" + Math.round(n).toLocaleString("en-IN");
+  const lakh = (n) => n >= 1e5 ? "₹" + (n / 1e5).toFixed(1) + " L" : inr(n);
+
+  // Sum rows; "m" fields count only rows with a CRM lead (used for conversion rates and revenue per lead)
+  function sum(rows) {
+    const t = Object.fromEntries(N.map((k) => [k, 0])); t.m_apps = 0; t.m_enrols = 0; t.m_revenue = 0;
+    for (const r of rows) {
+      for (const k of N) t[k] += r[k] || 0;
+      if (r.channel !== "No CRM lead") { t.m_apps += r.apps || 0; t.m_enrols += r.enrols || 0; t.m_revenue += r.revenue || 0; }
+    }
+    return t;
+  }
+
+  const COLS = [
+    ["Leads", (t) => int(t.leads)],
+    ["Reached", (t) => t.leads ? [int(t.reached), pct(t.reached, t.leads)] : null],
+    ["Avg dials / lead", (t) => dec(t.dials, t.leads)],
+    ["Avg connects / lead", (t) => dec(t.connects, t.leads)],
+    ["Connect rate", (t) => pct(t.connects, t.dials)],
+    ["Visits sched.", (t) => t.leads ? int(t.sched) : null, "bl"],
+    ["Visits done", (t) => t.leads ? int(t.visited) : null],
+    ["Applications", (t) => int(t.apps)],
+    ["Enrollments", (t) => int(t.enrols)],
+    ["Junk + lost", (t) => t.leads ? [int(t.junk_lost), pct(t.junk_lost, t.leads)] : null],
+    ["Lead → Sch", (t) => pct(t.sched, t.leads), "bl"],
+    ["Lead → Visit", (t) => pct(t.visited, t.leads)],
+    ["Sch → Visit", (t) => pct(t.visited, t.sched)],
+    ["Lead → App", (t) => pct(t.m_apps, t.leads)],
+    ["Lead → Enroll", (t) => pct(t.m_enrols, t.leads)],
+    ["Revenue", (t) => t.revenue ? inr(t.revenue) : "₹0", "bl"],
+    ["Revenue / lead", (t) => t.leads ? inr(t.m_revenue / t.leads) : null],
+  ];
+
+  function cell(tr, v, cls) {
+    const td = document.createElement("td"); if (cls) td.className = cls;
+    if (v == null) { td.textContent = "–"; td.classList.add("na"); }
+    else if (Array.isArray(v)) { td.textContent = v[0] + " "; const s = document.createElement("span"); s.className = "pct"; s.textContent = "(" + v[1] + ")"; td.append(s); }
+    else td.textContent = v;
+    tr.append(td);
+  }
+  function header(table, firstLabels) {
+    const thead = document.createElement("thead"), tr = document.createElement("tr");
+    firstLabels.forEach((l, i) => { const th = document.createElement("th"); th.textContent = l; th.className = i === 0 ? "first" : "l"; tr.append(th); });
+    for (const [label, , cls] of COLS) { const th = document.createElement("th"); th.textContent = label; if (cls) th.className = cls; tr.append(th); }
+    thead.append(tr); table.append(thead);
+  }
+  function row(tbody, labels, t, cls) {
+    const tr = document.createElement("tr"); if (cls) tr.className = cls;
+    labels.forEach((l, i) => cell(tr, l, i === 0 ? "first" : "l"));
+    for (const [, f, c] of COLS) cell(tr, f(t), c);
+    tbody.append(tr);
+  }
+
+  function render(data) {
+    const rows = data.rows;
+    const all = sum(rows);
+    $("#asof").textContent = "Season to date (AY 2027-28). CRM data live as of " + data.taken + "; admissions entry sheet as of " + data.sheet_taken + ".";
+    const nl = sum(rows.filter((r) => r.channel === "No CRM lead"));
+    $("#takeaway").textContent = "";
+    const tk = $("#takeaway");
+    tk.append(document.createTextNode(int(all.enrols) + " enrollments and " + lakh(all.revenue) + " revenue so far. "));
+    const bad = document.createElement("b");
+    bad.textContent = int(nl.enrols + 0) + " of those enrollments and " + lakh(nl.revenue) + " (" + pct(nl.revenue, all.revenue) + " of revenue)";
+    tk.append(bad, document.createTextNode(" come from parents with no lead in the CRM, so no marketing channel gets credit for them."));
+
+    const tiles = [
+      ["Leads", int(all.leads), "in the CRM"],
+      ["Reached", pct(all.reached, all.leads), int(all.reached) + " leads called"],
+      ["Visits done", int(all.visited), pct(all.visited, all.leads) + " of leads"],
+      ["Applications", int(all.apps), "application fee paid"],
+      ["Enrollments", int(all.enrols), "admission or term fee paid"],
+      ["Revenue", lakh(all.revenue), "all fees paid"],
+    ];
+    const tw = $("#tiles"); tw.textContent = "";
+    for (const [k, v, s] of tiles) {
+      const d = document.createElement("div"); d.className = "tile";
+      for (const [c, txt] of [["k", k], ["v", v], ["s", s]]) { const e = document.createElement("div"); e.className = c; e.textContent = txt; d.append(e); }
+      tw.append(d);
+    }
+
+    // Channel summary
+    const ct = $("#channelTable"); ct.textContent = ""; header(ct, ["Channel"]);
+    let tb = document.createElement("tbody");
+    for (const ch of CH_ORDER) {
+      const rs = rows.filter((r) => r.channel === ch); if (!rs.length) continue;
+      row(tb, [ch], sum(rs), ch === "No CRM lead" ? "nolead" : "");
+    }
+    row(tb, ["All channels"], all, "total"); ct.append(tb);
+
+    // Campus x channel
+    const campuses = [...new Set(rows.map((r) => r.campus))].sort((a, b) => sum(rows.filter((r) => r.campus === b)).leads - sum(rows.filter((r) => r.campus === a)).leads);
+    const sel = $("#campusSel");
+    if (sel.options.length === 1) for (const c of campuses) { const o = document.createElement("option"); o.value = c; o.textContent = short(c); sel.append(o); }
+    const draw = () => {
+      const t = $("#campusTable"); t.textContent = ""; header(t, ["Campus", "Channel"]);
+      const body = document.createElement("tbody");
+      for (const c of campuses) {
+        if (sel.value && sel.value !== c) continue;
+        const rs = rows.filter((r) => r.campus === c);
+        row(body, [short(c), "All channels"], sum(rs), "total campus-start");
+        for (const ch of CH_ORDER) { const x = rs.filter((r) => r.channel === ch); if (x.length) row(body, ["", ch], sum(x), ch === "No CRM lead" ? "nolead" : ""); }
+      }
+      t.append(body);
+    };
+    sel.onchange = draw; draw();
+  }
+})();
+</script>
+</body>
+</html>
