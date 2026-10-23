@@ -286,8 +286,10 @@ tr.nolead td { color: var(--muted); font-style: italic; }
   function render(data) {
     const C = data.campuses, CH = data.channels, R = data.reasons;
     const ok = (ci) => C[ci] && C[ci] !== "Unassigned";
-    const today = data.today, season = data.leads.reduce((m, l) => (l[0] < m ? l[0] : m), today);
-    const first = [season, ...data.fees.map((f) => f[0]), ...data.spend.map((x) => x[0])].reduce((m, d) => (d < m ? d : m), season);
+    // "Season to date" starts at the earliest record of any kind: AY 2027-28 fees were paid from August, before the first CRM lead
+    const today = data.today;
+    const first = [...data.leads.map((l) => l[0]), ...data.fees.map((f) => f[0]), ...data.spend.map((x) => x[0])].reduce((m, d) => (d < m ? d : m), today);
+    const season = first;
     $("#asof").textContent = "AY 2027-28. CRM data as of " + data.taken + "; admissions entry sheet as of " + data.sheet_taken +
       (data.spend_upto && data.spend_upto.Edelytics ? "; Edelytics spend to " + fmtDay(data.spend_upto.Edelytics) : "") + ".";
 
