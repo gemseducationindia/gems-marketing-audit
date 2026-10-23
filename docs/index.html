@@ -399,12 +399,27 @@ details.defs b { color: var(--ink-2); font-weight: 600; }
     const minM = o.min.slice(0, 7), maxM = o.max.slice(0, 7);
     if (view < minM) view = minM;
     const el = h("div", { class: "pop cal" + (o.mode === "single" ? " single" : ""), role: "dialog", "aria-label": o.label });
+    let days = [], presetBtns = [], sumEl = null, applyBtn = null;
     function apply(f, t) { closePop(); o.onApply(f, t); }
+    // Hover and clicks only restyle the existing day buttons. Rebuilding them mid-click made the browser drop the end-date click.
+    function paint() {
+      const lo = picking ? (hover && hover < a ? hover : a) : a, hi = picking ? (hover && hover > a ? hover : a) : b;
+      for (const btn of days) {
+        const s = btn.dataset.d, single = o.mode === "single";
+        btn.classList.toggle("in", !single && !!lo && !!hi && s >= lo && s <= hi);
+        btn.classList.toggle("start", single ? s === a : s === lo);
+        btn.classList.toggle("end", single ? s === a : s === hi);
+      }
+      for (const [btn, f, t] of presetBtns) btn.setAttribute("aria-pressed", String(!picking && a === f && b === t));
+      if (sumEl) sumEl.textContent = picking ? "Now pick the end date" : a && b ? span(a, b) + " · " + daysIn(a, b) + " days" : "";
+      if (applyBtn) applyBtn.disabled = picking || !a || !b;
+    }
     function render() {
-      el.textContent = "";
+      el.textContent = ""; days = []; presetBtns = [];
       if (o.presets) {
-        el.append(h("div", { class: "presets" }, o.presets.map(([label, f, t]) =>
-          h("button", { type: "button", "aria-pressed": String(!picking && a === f && b === t), onclick: () => apply(f, t) }, label))));
+        el.append(h("div", { class: "presets" }, o.presets.map(([label, f, t]) => {
+          const btn = h("button", { type: "button", onclick: () => apply(f, t) }, label); presetBtns.push([btn, f, t]); return btn;
+        })));
       }
       const months = o.mode === "single" ? [view] : [view, addMonth(view, 1)];
       const body = h("div", { class: "body" });
@@ -415,38 +430,32 @@ details.defs b { color: var(--ink-2); font-weight: 600; }
           disabled: view <= minM, onclick: () => { view = addMonth(view, -1); render(); } });
         const next = h("button", { class: "arrow" + (last ? "" : " ghost"), type: "button", "aria-label": "Next month", html: ICON.right,
           disabled: addMonth(view, months.length - 1) >= maxM, onclick: () => { view = addMonth(view, 1); render(); } });
-        if (mi === 0 && months.length > 1) { next.classList.remove("ghost"); next.classList.add("ghost"); }
         const title = D8(ym + "-01").toLocaleDateString("en-IN", { month: "long", year: "numeric", timeZone: "UTC" });
         const grid = h("div", { class: "grid", role: "grid" }, ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map((d) => h("div", { class: "dow" }, d)));
         const first = D8(ym + "-01"), pad = (first.getUTCDay() + 6) % 7;
         for (let i = 0; i < pad; i++) grid.append(h("div"));
-        const lo = picking ? (hover && hover < a ? hover : a) : a, hi = picking ? (hover && hover > a ? hover : a) : b;
         for (let d = first; iso(d).slice(0, 7) === ym; d = D8(shift(iso(d), 1))) {
-          const s = iso(d), off = s < o.min || s > o.max;
-          const cls = ["day"];
-          if (o.mode !== "single" && lo && hi && s >= lo && s <= hi) cls.push("in");
-          if (s === lo || (o.mode === "single" && s === a)) cls.push("start");
-          if (s === hi || (o.mode === "single" && s === a)) cls.push("end");
-          if (s === o.max) cls.push("today");
-          grid.append(h("button", { class: cls.join(" "), type: "button", disabled: off, "aria-label": fmtY(s),
-            onmouseenter: () => { if (picking) { hover = s; render(); } },
+          const s = iso(d);
+          const btn = h("button", { class: "day" + (s === o.max ? " today" : ""), type: "button", "data-d": s, disabled: s < o.min || s > o.max, "aria-label": fmtY(s),
+            onmouseenter: () => { if (picking) { hover = s; paint(); } },
             onclick: () => {
               if (o.mode === "single") return apply(s, s);
               if (!picking) { a = s; b = null; picking = true; hover = s; }
               else { if (s < a) { b = a; a = s; } else b = s; picking = false; hover = null; }
-              render();
-            } }, h("span", null, String(d.getUTCDate()))));
+              paint();
+            } }, h("span", null, String(d.getUTCDate())));
+          days.push(btn); grid.append(btn);
         }
         row.append(h("div", { class: "month" }, h("div", { class: "mhead" }, prev, title, next), grid));
       });
       body.append(row);
       if (o.mode !== "single") {
-        body.append(h("div", { class: "foot" },
-          h("span", { class: "sum" }, picking ? "Pick the end date" : a && b ? span(a, b) + " · " + daysIn(a, b) + " days" : ""),
-          h("button", { class: "btn", type: "button", onclick: closePop }, "Cancel"),
-          h("button", { class: "btn dark", type: "button", disabled: picking || !a || !b, onclick: () => apply(a, b) }, "Apply")));
+        sumEl = h("span", { class: "sum" });
+        applyBtn = h("button", { class: "btn dark", type: "button", onclick: () => apply(a, b) }, "Apply");
+        body.append(h("div", { class: "foot" }, sumEl, h("button", { class: "btn", type: "button", onclick: closePop }, "Cancel"), applyBtn));
       }
       el.append(body);
+      paint();
     }
     render(); openPop(anchor, el);
   }
