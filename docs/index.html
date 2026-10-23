@@ -152,7 +152,7 @@ tr.nolead td { color: var(--muted); font-style: italic; }
   <div class="campus-cards" id="campusCards"></div>
 
   <section class="defs">
-    <p><b>Dates</b>: leads, calls, visits and junk/lost count the leads <i>created</i> in the range (with everything done on them so far). Applications, enrollments, revenue and spend count what was <i>paid</i> in the range. <b>Spend</b> so far is Edelytics only (to its sheet's last day); other agencies show – until their sheets are added.</p>
+    <p><b>Dates</b>: leads, calls, visits and junk/lost count the leads <i>created</i> in the range (with everything done on them so far). Applications, enrollments, revenue and spend count what was <i>paid</i> in the range. <b>Spend</b> so far is Edelytics only (to its sheet's last day); other agencies show – until their sheets are added. <b>CAC % of revenue</b>: spend ÷ revenue for the same campus, channel and dates.</p>
     <p><b>Leads</b>: every CRM lead (duplicates and leads with no campus excluded). <b>Channel</b>: Meta = Meta Ads, Instagram Ads, Facebook; Google = Google Ads; Website = Website Enquiry; Others = walk-in, referral, open house, events and the rest.</p>
     <p><b>Reached</b>: at least one outgoing call. <b>Dials</b>: outgoing calls, not counting a counsellor's outcome note logged right after an Exotel call. <b>Connect</b>: an answered call that lasted more than 0 seconds. <b>Connect rate</b>: connects ÷ dials.</p>
     <p><b>Visits scheduled / done</b>: a campus visit booked / marked done in the CRM. <b>Junk + lost</b>: lead status Junk or Lost.</p>
@@ -251,6 +251,7 @@ tr.nolead td { color: var(--muted); font-style: italic; }
     ["Spend", (t) => t.spend ? inr(t.spend) : null, "bl"],
     ["Cost / lead", (t) => t.spend && t.leads ? inr(t.spend / t.leads) : null],
     ["Cost / enrollment", (t) => t.spend && t.enrols ? inr(t.spend / t.enrols) : null],
+    ["CAC % of revenue", (t) => t.spend && t.revenue ? pct(t.spend, t.revenue) : null],
   ];
 
   function cell(tr, v, cls) {
@@ -369,7 +370,7 @@ tr.nolead td { color: var(--muted); font-style: italic; }
         ["Applications", int(all.apps), "application fee paid"],
         ["Enrollments", int(all.enrols), "admission or term fee paid"],
         ["Revenue", lakh(all.revenue), "fees paid in range"],
-        ["Spend", all.spend ? lakh(all.spend) : "–", all.spend && all.enrols ? inr(all.spend / all.enrols) + " per enrollment" : "agency sheets added so far"],
+        ["Spend", all.spend ? lakh(all.spend) : "–", all.spend && all.revenue ? pct(all.spend, all.revenue) + " of revenue (CAC)" : "agency sheets added so far"],
       ];
       const tw = $("#tiles"); tw.textContent = "";
       for (const [k, v, s2] of tiles) {
