@@ -30,7 +30,8 @@ channel = lambda src: CHANNEL.get(src or "", "Others")
 CAMPUS_ALIAS = {"Cresmonde World School - Vikhroli": "GEMS Millennium School - Vikhroli",
                 "Cresmonde World School - Kalyan": "GEMS Millennium School - Kalyan"}
 
-leads = get("CRM Lead", ["name", "creation", "source", "territory", "status", "is_duplicate", "visit_state", "visit_done_on", "mobile_no", "phone"])
+leads = get("CRM Lead", ["name", "creation", "source", "territory", "status", "is_duplicate", "visit_state", "visit_done_on", "mobile_no", "phone",
+                         "lost_reason"])
 visits = get("GEMS Visit", ["enquiry", "status"])
 calls = get("CRM Call Log", ["type", "status", "duration", "telephony_medium", "reference_docname", "to", "start_time", "creation"],
             [["type", "=", "Outgoing"]])
@@ -96,13 +97,29 @@ for s in students.values():
     if not (s["app"] or s["enrol"] or s["rev"]): continue
     cands = by_phone.get(s["phone"], [])
     lead = next((l for l in cands if l["territory"] == s["campus"]), cands[0] if cands else None)
-    ch = channel(lead["source"]) if lead else "No CRM lead"
+    ch = channel(lead["source"]) if lead else "Others"   # paying students with no CRM lead count as Others
     match_stats["matched" if lead else "unmatched"] += 1
     add(s["campus"], ch, apps=int(s["app"]), enrols=int(s["enrol"]), revenue=s["rev"])
 
-rows = [dict(campus=k[0], channel=k[1], **v) for k, v in stats.items()]
+# Junk/lost reasons per campus; free-text variants folded into the CRM's own reasons
+REASON = {"not iooking for admissions": "Not looking for admission", "not inetersted": "Not looking for admission",
+          "not interested": "Not looking for admission", "invalid": "Duplicate or invalid enquiry",
+          "wrong number": "Duplicate or invalid enquiry", "testing": "Duplicate or invalid enquiry",
+          "applied mistakenly": "Duplicate or invalid enquiry", "international number": "Duplicate or invalid enquiry",
+          "he is part of school": "Duplicate or invalid enquiry", "looking for job": "Looking for a job, not admission",
+          "interested only if she gets a job in gems": "Looking for a job, not admission",
+          "no seat in requested grade": "Grade not available", "prefer cbse": "Curriculum mismatch",
+          "state to cbse issue": "Curriculum mismatch"}
+reasons = C.defaultdict(C.Counter)
+for l in leads:
+    if l["status"] in ("Junk", "Lost"):
+        r = (l["lost_reason"] or "").strip() or "Not recorded"
+        reasons[l["territory"] or "Unassigned"][REASON.get(r.lower(), r)] += 1
+
+rows = [dict(campus=k[0], channel=k[1], **{f: v.get(f, 0) for f in ("leads", "reached", "dials", "connects", "sched", "visited",
+                                                                  "junk_lost", "apps", "enrols", "revenue")}) for k, v in stats.items()]
 out = dict(taken=(dt.datetime.utcnow() + dt.timedelta(hours=5, minutes=30)).strftime("%d %b %Y, %I:%M %p IST"),
-           rows=rows, students=len(students), match=dict(match_stats))
+           rows=rows, reasons={c: r.most_common() for c, r in reasons.items()}, students=len(students), match=dict(match_stats))
 json.dump(out, open(os.path.join(HERE, "audit.json"), "w"), indent=1)
 print(json.dumps(out["match"]), len(students), "students;", len(rows), "campus x channel rows")
 tot = C.Counter()
