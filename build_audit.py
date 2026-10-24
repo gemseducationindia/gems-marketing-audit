@@ -3,16 +3,19 @@ recount any date range and drill into source, campaign and ad. No names, phone n
 Writes audit.json.
 
 Usage: python3 build_audit.py
-Needs ~/.gems_crm_token, admissions.csv beside it, and the agencies' live spend sheet IDs in
-~/.gems_marketing_audit_sheets.json ({"Edelytics": id, "EchoVME": id, "Because": id}). The IDs stay off the public repo.
+Needs the CRM token (CRM_TOKEN, or ~/.gems_crm_token) and the live sheet IDs (MARKETING_SHEETS, or ~/.gems_marketing_audit_sheets.json:
+{"Edelytics": id, "EchoVME": id, "Because": id, "Admissions": id}); the IDs stay off this public repo. Admissions come from the Google Sheet
+that mirrors the admissions entry Excel (admissions.csv beside this script if there's no "Admissions" ID). Parents' voice comes from the
+call audit repo (CALL_AUDIT_DIR, default the local clone). GitHub Actions runs this nightly (.github/workflows/nightly.yml).
 """
 import csv, datetime as dt, glob, io, json, os, time, urllib.parse, urllib.request, collections as C
 import openpyxl, re
 
 B = "https://gemseducation.m.frappe.cloud"
-T = open(os.path.expanduser("~/.gems_crm_token")).read().strip()
+T = (os.environ.get("CRM_TOKEN") or open(os.path.expanduser("~/.gems_crm_token")).read()).strip()
+T = T if T.startswith("token ") else "token " + T
 HERE = os.path.dirname(os.path.abspath(__file__))
-SHEETS = json.load(open(os.path.expanduser("~/.gems_marketing_audit_sheets.json")))
+SHEETS = json.loads(os.environ["MARKETING_SHEETS"]) if os.environ.get("MARKETING_SHEETS") else json.load(open(os.path.expanduser("~/.gems_marketing_audit_sheets.json")))
 
 
 def get(doctype, fields, filters=()):
@@ -127,8 +130,12 @@ def pdate(s):
 amt = lambda v: float(str(v).replace(",", "").strip() or 0)
 yes = lambda v: (v or "").strip().lower() == "yes"
 students = {}
-with open(os.path.join(HERE, "admissions.csv"), newline="", encoding="utf-8") as f:   # export of the admissions entry sheet; never committed
-    for r in csv.DictReader(f):
+if SHEETS.get("Admissions"):   # Google Sheet mirror of the admissions entry Excel (a Microsoft Forms response sheet), first tab
+    adm = urllib.request.urlopen(f"https://docs.google.com/spreadsheets/d/{SHEETS['Admissions']}/export?format=csv", timeout=90).read().decode("utf-8")
+else: adm = open(os.path.join(HERE, "admissions.csv"), encoding="utf-8").read()   # a pasted export; never committed
+if True:
+    for r in csv.DictReader(io.StringIO(adm)):
+        if not (r.get("Campus") or "").strip(): continue
         campus = CAMPUS_ALIAS.get(r["Campus"].strip(), r["Campus"].strip())
         ph = d10(r["Parent phone number (10 digits, without +91)"])
         students[(campus, r["Student name"].strip().lower(), ph)] = (campus, ph, r)
@@ -217,7 +224,7 @@ conv = {l["name"]: [int(l["name"] in vd)] + paid.get(l["name"], [0, 0]) for l in
 # Voice: [day, campus, channel, intent (0 Hot, 1 Warm, 2 Cold, 3 unknown), visit booked on the call, [[topic, 0 concern / 1 interest]] or null if
 #         not tagged yet, grade (label), {"v": what the parent wants, "q": [[topic, kind, quote]]} (corporate login only),
 #         [school type, decision maker, distance, join when] or null, the lead's [visit done, applied, enrolled]]
-CA = os.path.expanduser("~/Library/CloudStorage/OneDrive-GEMS/CodeTech/GEMS CRM Frappe/gems-call-audit")
+CA = os.environ.get("CALL_AUDIT_DIR") or os.path.expanduser("~/Library/CloudStorage/OneDrive-GEMS/CodeTech/GEMS CRM Frappe/gems-call-audit")
 rub = open(os.path.join(CA, "rubric", "v1.yaml")).read()   # the rubric's `topics:` block, one "  id: description" per line
 topics = re.findall(r"^  (\w+):", rub[rub.index("\ntopics:"):], re.M)
 ca_calls = {c["name"]: c for c in json.load(open(os.path.join(CA, "calls.json")))}

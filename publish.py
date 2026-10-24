@@ -10,7 +10,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 HERE = os.path.dirname(os.path.abspath(__file__)); DOCS = os.path.join(HERE, "docs")
-USERS = json.load(open(os.path.expanduser("~/.gems_marketing_audit_users.json")))
+USERS = json.loads(os.environ["MARKETING_USERS"]) if os.environ.get("MARKETING_USERS") else json.load(open(os.path.expanduser("~/.gems_marketing_audit_users.json")))
 src = dict(json.load(open(sys.argv[1])), sheet_taken=sys.argv[2])
 uid = lambda name: hashlib.sha256(("gems-audit:" + name.strip().lower()).encode()).hexdigest()[:32]
 

@@ -1,0 +1,31 @@
+# Every night at 06:00 IST (after the call audit's 04:00 sync and Claude's 05:30 scoring): rebuild the marketing audit from the
+# live CRM, the agencies' spend sheets, the admissions Google Sheet and the call audit, encrypt it per login and publish docs/.
+name: Nightly refresh
+on:
+  schedule: [{cron: "30 0 * * *"}]   # 00:30 UTC = 06:00 IST
+  workflow_dispatch:
+concurrency: {group: marketing-audit, cancel-in-progress: false}
+permissions: {contents: write}
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Call audit data (private repo)
+        uses: actions/checkout@v4
+        with: {repository: gemseducationindia/gems-call-audit-data, token: "${{ secrets.CALL_AUDIT_TOKEN }}", path: ca, sparse-checkout: "calls.json\nscores\npersonas\nrubric"}
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: pip install openpyxl==3.1.5 cryptography==43.0.3
+      - run: python build_audit.py
+        env: {CRM_TOKEN: "${{ secrets.CRM_TOKEN }}", MARKETING_SHEETS: "${{ secrets.MARKETING_SHEETS }}", CALL_AUDIT_DIR: ca}
+      - run: python publish.py audit.json "$(TZ=Asia/Kolkata date '+%-d %b %Y')"
+        env: {MARKETING_USERS: "${{ secrets.MARKETING_USERS }}"}
+      - name: Publish
+        run: |
+          git config user.name "GEMS Marketing Audit bot"; git config user.email "gemseducationindia@users.noreply.github.com"
+          git add docs
+          git diff --cached --quiet && exit 0
+          # keep one rolling bot commit on top, so nightly encrypted copies don't pile up in the history
+          if [ "$(git log -1 --format=%an)" = "GEMS Marketing Audit bot" ]; then git commit -q --amend -m "Nightly refresh $(date -u +%F)"; git push -q -f; else git commit -q -m "Nightly refresh $(date -u +%F)"; git push -q; fi
