@@ -21,12 +21,13 @@ def subset(d, allowed):
     labels, lmap = [], {}
     lab = lambda i: -1 if i < 0 else lmap.setdefault(i, labels.append(d["labels"][i]) or len(labels) - 1)
     out = dict(d, campuses=[d["campuses"][i] for i in cmap], labels=labels)
-    out["leads"] = [x[:1] + [cmap[x[1]]] + x[2:10] + [lab(v) for v in x[10:]] for x in d["leads"] if x[1] in cmap]
+    out["leads"] = [x[:1] + [cmap[x[1]]] + x[2:10] + [lab(v) for v in x[10:14]] + x[14:] for x in d["leads"] if x[1] in cmap]
     out["students"] = [[cmap[x[0]]] + x[1:4] + [lab(v) for v in x[4:]] for x in d["students"] if x[0] in cmap]
     out["fees"] = [x[:1] + [cmap[x[1]]] + x[2:4] + [lab(v) for v in x[4:]] for x in d["fees"] if x[1] in cmap]
     out["spend"] = [x[:1] + [cmap[x[1]]] + x[2:8] + [lab(x[8])] for x in d["spend"] if x[1] in cmap]
     # parents' words (what they want, quotes) stay with the corporate login; agencies see the topic counts only
-    out["voice"] = [x[:1] + [cmap[x[1]]] + x[2:6] + [lab(x[6])] + [x[7] if allowed == "all" else None] for x in d.get("voice", []) if x[1] in cmap]
+    out["voice"] = [x[:1] + [cmap[x[1]]] + x[2:6] + [lab(x[6])] + [x[7] if allowed == "all" else None] + x[8:] for x in d.get("voice", []) if x[1] in cmap]
+    out["personas"] = [[cmap[x[0]]] + x[1:] for x in d.get("personas", []) if x[0] in cmap]
     return out
 
 

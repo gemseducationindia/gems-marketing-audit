@@ -106,7 +106,7 @@ lab = lambda v: idx(labels, (v or "").strip() or "(not set)")
 tags = lambda l: [lab(l["source"]), lab(l["utm_campaign"]), lab(l["utm_content"])]   # source, campaign, ad
 
 # Leads: [created on, campus, channel, contacted, dials, connects, visit scheduled, visit done, junk/lost, reason or -1,
-#         source, campaign, ad, grade applied for]   (the last four index into labels)
+#         source, campaign, ad, grade applied for (these four index into labels), applied, enrolled]
 L = []
 for l in leads:
     i, jl = l["name"], l["status"] in ("Junk", "Lost")
@@ -133,7 +133,7 @@ with open(os.path.join(HERE, "admissions.csv"), newline="", encoding="utf-8") as
         ph = d10(r["Parent phone number (10 digits, without +91)"])
         students[(campus, r["Student name"].strip().lower(), ph)] = (campus, ph, r)
 
-S, F, unmatched = [], [], 0
+S, F, unmatched, paid = [], [], 0, {}
 for campus, ph, r in students.values():
     fees = [(k, pdate(r[f"{label} fee payment date (DD/MM/YYYY)"]), amt(r[f"{label} fee amount paid (₹)"]))
             for k, label in (("app", "Application"), ("adm", "Admission"), ("tui", "Tuition / term"))
@@ -142,6 +142,8 @@ for campus, ph, r in students.values():
     cands = by_phone.get(ph, [])
     lead = next((l for l in cands if l["territory"] == campus), cands[0] if cands else None)
     unmatched += lead is None
+    if lead: paid[lead["name"]] = [max(paid.get(lead["name"], [0, 0])[0], int(any(k == "app" for k, _, _ in fees))),
+                                   max(paid.get(lead["name"], [0, 0])[1], int(any(k in ("adm", "tui") for k, _, _ in fees)))]
     ci, ch = idx(campuses, campus), channels.index(channel(lead["source"]) if lead else "Others")  # no CRM lead -> Others
     tg = tags(lead) if lead else [lab("No CRM lead"), lab(None), lab(None)]
     app = next((d for k, d, _ in fees if k == "app"), None)
@@ -208,9 +210,13 @@ for ws in workbook("Because"):
         if len(r) > 8 and isinstance(r[0], dt.datetime) and num(r[4]):
             spend("Because", r[0], camp, "Meta", r[4], impr=r[5], reach=r[6], clicks=r[7], ag_leads=r[8], campaign=r[1])
 
+for rec, l in zip(L, leads): rec += paid.get(l["name"], [0, 0])   # applied, enrolled (any time)
+conv = {l["name"]: [int(l["name"] in vd)] + paid.get(l["name"], [0, 0]) for l in leads}   # visit done, applied, enrolled
+
 # Parents' voice: calls the call audit has scored (and tagged with what the parent raised), joined to their lead's campus and channel.
-# Voice: [day, campus, channel, intent (0 Hot, 1 Warm, 2 Cold, 3 unknown), visit booked, [[topic, 0 concern / 1 interest]] or null if
-#         not tagged yet, grade (label), {"v": what the parent wants, "q": [[topic, kind, quote]]}]  (the text goes to the corporate login only)
+# Voice: [day, campus, channel, intent (0 Hot, 1 Warm, 2 Cold, 3 unknown), visit booked on the call, [[topic, 0 concern / 1 interest]] or null if
+#         not tagged yet, grade (label), {"v": what the parent wants, "q": [[topic, kind, quote]]} (corporate login only),
+#         [school type, decision maker, distance, join when] or null, the lead's [visit done, applied, enrolled]]
 CA = os.path.expanduser("~/Library/CloudStorage/OneDrive-GEMS/CodeTech/GEMS CRM Frappe/gems-call-audit")
 rub = open(os.path.join(CA, "rubric", "v1.yaml")).read()   # the rubric's `topics:` block, one "  id: description" per line
 topics = re.findall(r"^  (\w+):", rub[rub.index("\ntopics:"):], re.M)
@@ -224,12 +230,17 @@ for f in sorted(glob.glob(os.path.join(CA, "scores", "v1", "*.json"))):
               {"Hot": 0, "Warm": 1, "Cold": 2}.get(sc.get("intent"), 3), int(sc.get("outcome") == "Visit booked"),
               None if tp is None else [[topics.index(t["topic"]), int(t["kind"] == "interest")] for t in tp if t.get("topic") in topics],
               lab(l["grade_applied"]),
-              {"v": sc.get("parent_voice") or "", "q": [[topics.index(t["topic"]), int(t["kind"] == "interest"), t["quote"]] for t in tp or [] if t.get("topic") in topics]}])
+              {"v": sc.get("parent_voice") or "", "q": [[topics.index(t["topic"]), int(t["kind"] == "interest"), t["quote"]] for t in tp or [] if t.get("topic") in topics]},
+              [sc["profile"].get(k) for k in ("school_type", "decision_maker", "distance", "join_when")] if sc.get("profile") else None, conv[l["name"]]])
 print("parents' voice:", len(V), "scored lead calls,", sum(v[5] is not None for v in V), "tagged with topics")
+# Claude's weekly parent personas per campus and channel (call audit repo): [campus, channel, persona, tip, calls analysed, written on]
+pf = os.path.join(CA, "personas", "channels.json"); PJ = json.load(open(pf)) if os.path.exists(pf) else {"items": []}
+PERS = [[campuses.index(p["campus"]), channels.index(p["channel"]), p["persona"], p["tip"], p["calls"], PJ.get("generated")]
+        for p in PJ["items"] if p["campus"] in campuses and p["channel"] in channels]
 
 now = dt.datetime.utcnow() + dt.timedelta(hours=5, minutes=30)
 out = dict(taken=now.strftime("%d %b %Y, %I:%M %p IST"), today=now.date().isoformat(), campuses=campuses, channels=channels,
-           reasons=reasons, labels=labels, leads=L, students=S, fees=F, spend=SP, spend_upto=spend_upto, topics=topics, voice=V)
+           reasons=reasons, labels=labels, leads=L, students=S, fees=F, spend=SP, spend_upto=spend_upto, topics=topics, voice=V, personas=PERS)
 json.dump(out, open(os.path.join(HERE, "audit.json"), "w"), separators=(",", ":"))
 print(len(L), "leads,", len(S), "paying students (", unmatched, "with no CRM lead ),", len(F), "fees,", len(SP), "spend rows")
 print("junk/lost with reason:", sum(1 for x in L if x[8] and x[9] >= 0), "of", sum(x[8] for x in L), "| reasons:", reasons)

@@ -220,6 +220,8 @@ td .p { color: var(--muted); font-weight: 400; font-size: 12px; margin-left: 4px
 .mbd { padding: 22px 26px 30px; display: grid; gap: 30px; }
 .mbd h4 { font-size: 17px; font-weight: 600; letter-spacing: -0.015em; margin: 0 0 10px; }
 .mbd h4 span { font-weight: 400; color: var(--muted); font-size: 13px; margin-left: 6px; }
+.two-col { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 860px) { .two-col { grid-template-columns: 1fr; } }
 .personas { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
 .pcard { background: var(--soft); border-radius: 16px; padding: 16px 18px; display: grid; gap: 10px; align-content: start; }
 .pcard .ch { display: flex; align-items: baseline; gap: 8px; font-weight: 600; font-size: 16px; }
@@ -239,6 +241,10 @@ td .p { color: var(--muted); font-weight: 400; font-size: 12px; margin-left: 4px
 .tag { display: inline-block; padding: 1px 8px; border-radius: 980px; font-size: 11px; font-weight: 500; }
 .tag.c { background: var(--bad-bg); color: var(--bad); } .tag.i { background: var(--tint); color: var(--cyan-ink); }
 .lock { font-size: 13px; color: var(--muted); background: var(--soft); border-radius: 12px; padding: 12px 14px; }
+.ai { background: #fff; border-radius: 12px; padding: 10px 12px; font-size: 13.5px; line-height: 1.45; display: grid; gap: 6px; }
+.ai p { margin: 0; } .ai .tip { color: var(--ink-2); } .ai .tip b { color: var(--navy); font-weight: 600; }
+.ai .by { font-size: 11px; color: var(--muted); }
+tr.best td { font-weight: 600; } tr.best td:first-child::after { content: " ★"; color: #D9A21B; }
 .empty { color: var(--muted); font-size: 14px; padding: 14px 16px; }
 
 details.defs { border-top: 1px solid var(--line); padding-top: 18px; color: var(--muted); font-size: 13px; }
@@ -764,6 +770,10 @@ details.defs b { color: var(--ink-2); font-weight: 600; }
   const sum = (a) => a.reduce((x, y) => x + y, 0);
   const inRange = (d) => d >= S.from && d <= S.to;
   const legend = (items) => h("div", { class: "lg" }, items.map(([label, col]) => h("span", null, h("i", { style: "background:" + col }), label)));
+  const BANDS = [["Early years", ["Pre-Kindergarten", "Nursery", "Junior KG", "Senior KG"]], ["Grades 1–5", ["Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5"]],
+    ["Grades 6–8", ["Grade 6", "Grade 7", "Grade 8"]], ["Grades 9–12", ["Grade 9", "Grade 10", "Grade 11", "Grade 12"]]];
+  const PROF = [{ budget: "budget school", mid: "mid-fee school", premium: "premium school", international: "international school", none: "first admission" },
+    {}, { walkable: "under 2 km", near: "2–5 km", mid: "5–10 km", far: "10+ km", relocating: "relocating" }, { this_session: "this year", next_session: "next year", later: "later" }];
   const KEEN = [["Hot", "#1A7F37"], ["Warm", "#00A3E0"], ["Cold", "#C4302B"], ["Unclear", "#D2D2D7"]];
 
   function insights(ci) { return h("div", { class: "trio" }, reasonsCard(ci), gradesCard(ci), voiceCard(ci)); }
@@ -856,13 +866,39 @@ details.defs b { color: var(--ink-2); font-weight: 600; }
       const t = topicCounts(vs), byKind = (k) => t.map((x, i) => i).filter((i) => t[i][k]).sort((a, b) => t[b][k] - t[a][k]).slice(0, 3).map(tName).join(", ") || "–";
       const keen = [0, 0, 0, 0]; vs.forEach((v) => keen[v[3]]++);
       const booked = sum(vs.map((v) => v[4]));
+      const ai = (D.personas || []).find((x) => x[0] === ci && x[1] === ch);
+      const withP = vs.filter((v) => v[8]), prof = (i) => { const c = {}; withP.forEach((v) => { const x = v[8][i]; if (x && x !== "unknown") c[x] = (c[x] || 0) + 1; });
+        return Object.entries(c).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([k, m]) => (PROF[i][k] || k) + " " + pct(m, withP.length)).join(", "); };
+      const ld = D.leads.filter((l) => l[1] === ci && l[2] === ch && inRange(l[0])), lv = sum(ld.map((l) => l[7])), le = sum(ld.map((l) => l[15] || 0));
+      const facts = [["Now at", prof(0)], ["Deciding", prof(1)], ["Lives", prof(2)], ["Joining", prof(3)]].filter(([, v]) => v);
       return h("div", { class: "pcard" }, h("div", { class: "ch" }, h("span", { style: "width:10px;height:10px;border-radius:3px;display:inline-block;background:" + CH_COL[ch] }), D.channels[ch], h("span", null, int(vs.length) + " calls · " + int(gt) + " leads")),
         h("dl", null,
           h("dt", null, "Grades"), h("dd", null, topG.length ? topG.map(([x, k]) => GSHORT(x) === x ? x : x + " " + pct(k, gt)).join(", ") : "–"),
           h("dt", null, "Worried about"), h("dd", null, byKind(0)),
           h("dt", null, "Looking for"), h("dd", null, byKind(1)),
           h("dt", null, "Keenness"), h("dd", null, vs.length ? pct(keen[0] + keen[1], vs.length) + " hot or warm" : "–", vs.length ? h("div", { class: "keen" }, keen.map((k, i) => (k ? h("i", { style: "flex:" + k + ";background:" + KEEN[i][1], title: KEEN[i][0] + ": " + k }) : null))) : null),
-          h("dt", null, "Visit booked"), h("dd", null, vs.length ? pct(booked, vs.length) + " of these calls" : "–")));
+          h("dt", null, "Visit booked"), h("dd", null, vs.length ? pct(booked, vs.length) + " of these calls" : "–"),
+          facts.map(([k, v]) => [h("dt", null, k), h("dd", null, v)]),
+          h("dt", null, "Converts"), h("dd", null, ld.length ? pct(lv, ld.length) + " visited · " + int(le) + " enrolled (" + pct(le, ld.length) + ")" : "–")),
+        ai ? h("div", { class: "ai" }, h("p", null, ai[2]), h("p", { class: "tip" }, h("b", null, "For the agency: "), ai[3]), h("span", { class: "by" }, "Written by Claude from " + ai[4] + " calls · " + fmt(ai[5]))) : null);
+    }
+    // Which parents convert: grade band x channel from CRM leads, and topic raised from analysed calls
+    function converts(cols, list) {
+      const rows = [];
+      for (const ch of cols) for (const [band, gs] of BANDS) {
+        const ld = D.leads.filter((l) => l[1] === ci && l[2] === ch && inRange(l[0]) && gs.includes(D.labels[l[13]]));
+        if (ld.length >= 5) rows.push([D.channels[ch] + " · " + band, ld.length, sum(ld.map((l) => l[7])), sum(ld.map((l) => l[14] || 0)), sum(ld.map((l) => l[15] || 0))]);
+      }
+      rows.sort((a, b) => b[4] / b[1] - a[4] / a[1] || b[2] / b[1] - a[2] / a[1]);
+      const best = rows.length && rows[0][4] ? rows[0][0] : null;
+      const tbl = (head, rs) => h("table", { class: "mini" }, h("thead", null, h("tr", null, head.map((x, i) => h("th", { style: i ? "text-align:right" : null }, x)))),
+        h("tbody", null, rs.map((r) => h("tr", { class: r[0] === best ? "best" : null }, r.map((x, i) => h("td", { style: i ? "text-align:right" : null }, x))))));
+      const t = topicCounts(list), byT = rankTopics(t).map((k) => { const vs = list.filter((v) => (v[5] || []).some(([x]) => x === k) && v[9]);
+        return [tName(k), vs.length, pct(sum(vs.map((v) => v[9][0])), vs.length) || "–", pct(sum(vs.map((v) => v[9][2])), vs.length) || "–"]; }).filter((r) => r[1] >= 3);
+      return h("section", null, h("h4", null, "Which parents convert", h("span", null, "CRM leads created in this range · enrolments to date")),
+        h("div", { class: "two-col" },
+          h("div", null, rows.length ? tbl(["Channel · grades", "Leads", "Visited", "Applied", "Enrolled", "Lead → enrol"], rows.map((r) => [r[0], int(r[1]), pct(r[2], r[1]), int(r[3]), int(r[4]), pct(r[4], r[1])])) : h("p", { class: "empty" }, "Not enough leads per group yet (5+ needed).")),
+          h("div", null, byT.length ? tbl(["Parents who raised…", "Calls", "Lead visited", "Lead enrolled"], byT) : h("p", { class: "empty" }, "Not enough analysed calls per topic yet (3+ needed)."))));
     }
     function render() {
       const all = voiceOf(ci).filter((v) => v[5]), chs = D.channels.map((_, i) => i).filter((i) => all.some((v) => v[2] === i));
@@ -885,6 +921,7 @@ details.defs b { color: var(--ink-2); font-weight: 600; }
               cols.map((ch, j) => { const c = pt[j][k][2], n = per[j].length, sh = n ? c / n : 0;
                 return c ? h("td", { class: "hc", style: "background:rgba(0,163,224," + (0.07 + sh * 0.6).toFixed(3) + ")", title: c + " of " + n + " calls" }, pct(c, n)) : h("td", { class: "hc z" }, "–"); }),
               h("td", { style: "text-align:center" }, t[k][0] >= t[k][1] ? h("span", { class: "tag c" }, "Concern") : h("span", { class: "tag i" }, "Interest"))))))));
+        body.append(converts(cols, list));
         const words = list.filter((v) => st.topic < 0 || (v[5] || []).some(([k]) => k === st.topic)).sort((a, b) => (b[0] > a[0] ? 1 : -1));
         const chips = h("div", { class: "chips" }, [[-1, "All topics"], ...order.slice(0, 10).map((k) => [k, tName(k)])].map(([k, l]) =>
           h("button", { class: "chip", type: "button", "aria-pressed": String(st.topic === k), onclick: () => { st.topic = k; render(); } }, l)));
