@@ -6,8 +6,8 @@ Usage: python3 build_audit.py
 Needs ~/.gems_crm_token, admissions.csv beside it, and the agencies' live spend sheet IDs in
 ~/.gems_marketing_audit_sheets.json ({"Edelytics": id, "EchoVME": id, "Because": id}). The IDs stay off the public repo.
 """
-import csv, datetime as dt, io, json, os, time, urllib.parse, urllib.request, collections as C
-import openpyxl
+import csv, datetime as dt, glob, io, json, os, time, urllib.parse, urllib.request, collections as C
+import openpyxl, re
 
 B = "https://gemseducation.m.frappe.cloud"
 T = open(os.path.expanduser("~/.gems_crm_token")).read().strip()
@@ -51,16 +51,19 @@ CAMPUS_ALIAS = {"Cresmonde World School - Vikhroli": "GEMS Millennium School - V
                 "Cresmonde World School - Kalyan": "GEMS Millennium School - Kalyan"}
 SHORT = {"GMS": "GEMS Millennium School", "GMA": "GEMS Modern Academy", "GSE": "GEMS School of Excellence"}
 INVALID = "Invalid lead"
-REASON = {"not iooking for admissions": "Not looking for admission", "not inetersted": "Not looking for admission",
-          "not interested": "Not looking for admission", "duplicate or invalid enquiry": INVALID, "invalid": INVALID,
-          "wrong number": INVALID, "testing": INVALID, "applied mistakenly": INVALID, "international number": INVALID,
-          "he is part of school": INVALID, "looking for job": "Looking for a job, not admission",
-          "interested only if she gets a job in gems": "Looking for a job, not admission",
-          "no seat in requested grade": "Grade not available", "prefer cbse": "Curriculum mismatch",
-          "state to cbse issue": "Curriculum mismatch"}
+# Lost/junk reasons clubbed into short labels; anything not listed shows as recorded
+_R = {INVALID: ["duplicate or invalid enquiry", "invalid", "wrong number", "testing", "applied mistakenly", "international number", "he is part of school"],
+      "Not looking now": ["not looking for admission", "not iooking for admissions", "not inetersted", "not interested",
+                          "continuing in the same previous school", "deferred to next academic year", "moving to another country"],
+      "Too far / out of zone": ["distance / transport not viable", "out of zone"],
+      "Job seeker": ["looking for job", "interested only if she gets a job in gems"],
+      "Grade not available": ["grade not available", "no seat in requested grade"],
+      "Curriculum mismatch": ["prefer cbse", "state to cbse issue"],
+      "Fees too high": ["fee too high"], "Didn't clear interaction": ["did not clear interaction"], "No reason given": ["not recorded", ""]}
+REASON = {raw: label for label, raws in _R.items() for raw in raws}
 
 leads = get("CRM Lead", ["name", "creation", "source", "territory", "status", "is_duplicate", "visit_state", "visit_done_on",
-                         "mobile_no", "phone", "lost_reason", "utm_campaign", "utm_content"])
+                         "mobile_no", "phone", "lost_reason", "utm_campaign", "utm_content", "grade_applied"])
 visits = get("GEMS Visit", ["enquiry", "status"])
 calls = get("CRM Call Log", ["type", "status", "duration", "telephony_medium", "reference_docname", "to", "start_time", "creation"],
             [["type", "=", "Outgoing"]])
@@ -103,16 +106,16 @@ lab = lambda v: idx(labels, (v or "").strip() or "(not set)")
 tags = lambda l: [lab(l["source"]), lab(l["utm_campaign"]), lab(l["utm_content"])]   # source, campaign, ad
 
 # Leads: [created on, campus, channel, contacted, dials, connects, visit scheduled, visit done, junk/lost, reason or -1,
-#         source, campaign, ad]   (the last three index into labels)
+#         source, campaign, ad, grade applied for]   (the last four index into labels)
 L = []
 for l in leads:
     i, jl = l["name"], l["status"] in ("Junk", "Lost")
     r = -1
     if jl:
-        txt = (l["lost_reason"] or "").strip() or "Not recorded"
+        txt = (l["lost_reason"] or "").strip()
         r = idx(reasons, REASON.get(txt.lower(), txt))
     L.append([l["creation"][:10], idx(campuses, l["territory"]), channels.index(channel(l["source"])), int(dials[i] > 0),
-              dials[i], conns[i], int(i in vs), int(i in vd), int(jl), r] + tags(l))
+              dials[i], conns[i], int(i in vs), int(i in vd), int(jl), r] + tags(l) + [lab(l["grade_applied"])])
 
 # Admissions sheet: one entry per student; each fee counts on its own payment date
 def pdate(s):
@@ -205,9 +208,28 @@ for ws in workbook("Because"):
         if len(r) > 8 and isinstance(r[0], dt.datetime) and num(r[4]):
             spend("Because", r[0], camp, "Meta", r[4], impr=r[5], reach=r[6], clicks=r[7], ag_leads=r[8], campaign=r[1])
 
+# Parents' voice: calls the call audit has scored (and tagged with what the parent raised), joined to their lead's campus and channel.
+# Voice: [day, campus, channel, intent (0 Hot, 1 Warm, 2 Cold, 3 unknown), visit booked, [[topic, 0 concern / 1 interest]] or null if
+#         not tagged yet, grade (label), {"v": what the parent wants, "q": [[topic, kind, quote]]}]  (the text goes to the corporate login only)
+CA = os.path.expanduser("~/Library/CloudStorage/OneDrive-GEMS/CodeTech/GEMS CRM Frappe/gems-call-audit")
+rub = open(os.path.join(CA, "rubric", "v1.yaml")).read()   # the rubric's `topics:` block, one "  id: description" per line
+topics = re.findall(r"^  (\w+):", rub[rub.index("\ntopics:"):], re.M)
+ca_calls = {c["name"]: c for c in json.load(open(os.path.join(CA, "calls.json")))}
+V = []
+for f in sorted(glob.glob(os.path.join(CA, "scores", "v1", "*.json"))):
+    sc = json.load(open(f)); c = ca_calls.get(sc["call"]); l = ix.get(c and c["lead"])
+    if not l or sc.get("outcome") in ("Not a lead", "Call dropped / unclear"): continue
+    tp = sc.get("topics")
+    V.append([c["start_time"][:10], idx(campuses, l["territory"]), channels.index(channel(l["source"])),
+              {"Hot": 0, "Warm": 1, "Cold": 2}.get(sc.get("intent"), 3), int(sc.get("outcome") == "Visit booked"),
+              None if tp is None else [[topics.index(t["topic"]), int(t["kind"] == "interest")] for t in tp if t.get("topic") in topics],
+              lab(l["grade_applied"]),
+              {"v": sc.get("parent_voice") or "", "q": [[topics.index(t["topic"]), int(t["kind"] == "interest"), t["quote"]] for t in tp or [] if t.get("topic") in topics]}])
+print("parents' voice:", len(V), "scored lead calls,", sum(v[5] is not None for v in V), "tagged with topics")
+
 now = dt.datetime.utcnow() + dt.timedelta(hours=5, minutes=30)
 out = dict(taken=now.strftime("%d %b %Y, %I:%M %p IST"), today=now.date().isoformat(), campuses=campuses, channels=channels,
-           reasons=reasons, labels=labels, leads=L, students=S, fees=F, spend=SP, spend_upto=spend_upto)
+           reasons=reasons, labels=labels, leads=L, students=S, fees=F, spend=SP, spend_upto=spend_upto, topics=topics, voice=V)
 json.dump(out, open(os.path.join(HERE, "audit.json"), "w"), separators=(",", ":"))
 print(len(L), "leads,", len(S), "paying students (", unmatched, "with no CRM lead ),", len(F), "fees,", len(SP), "spend rows")
 print("junk/lost with reason:", sum(1 for x in L if x[8] and x[9] >= 0), "of", sum(x[8] for x in L), "| reasons:", reasons)

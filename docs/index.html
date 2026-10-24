@@ -175,15 +175,70 @@ td .p { color: var(--muted); font-weight: 400; font-size: 12px; margin-left: 4px
 .exp.none { visibility: hidden; }
 .hint { font-size: 12px; color: var(--muted); margin: -8px 0 0; }
 
-.say { display: grid; gap: 10px; }
-.say h3 { font-size: 17px; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
-.say h3 span { font-weight: 400; color: var(--muted); font-size: 14px; margin-left: 6px; }
-.say table td, .say table th { padding: 8px 14px; }
-.say .first { min-width: 240px; }
-.say .panel { max-width: 1040px; }
-.heat { position: relative; }
-.heat .v { position: relative; z-index: 1; }
-.heat .p { color: var(--muted); }
+/* three insight panels under each campus: why leads drop, grades asked for, parents' voice */
+.trio { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; align-items: stretch; }
+@media (max-width: 1180px) { .trio { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 760px) { .trio { grid-template-columns: 1fr; } }
+.card { border: 1px solid var(--line); border-radius: var(--radius); background: #fff; padding: 16px 18px; display: grid; gap: 12px; align-content: start; min-width: 0; }
+.card h3 { font-size: 15px; font-weight: 600; letter-spacing: -0.015em; margin: 0; display: flex; align-items: baseline; gap: 8px; }
+.card h3 span { font-weight: 400; color: var(--muted); font-size: 12.5px; }
+.card .empty { padding: 0; font-size: 13px; }
+.mini { width: 100%; font-size: 12.5px; }
+.mini th, .mini td { padding: 5px 6px; border-bottom: 1px solid var(--line); }
+.mini th { background: none; font-size: 11px; color: var(--muted); font-weight: 500; }
+.mini td:first-child, .mini th:first-child { text-align: left; padding-left: 0; white-space: normal; }
+.mini tr:last-child td { border-bottom: 0; }
+.mini td.hc { text-align: center; border-radius: 6px; font-weight: 500; }
+.mini td.hc.z { color: var(--line-2); font-weight: 400; }
+.gcols { display: flex; align-items: flex-end; gap: 3px; }
+.gc { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+.gc b { font-size: 10.5px; font-weight: 500; color: var(--muted); height: 13px; font-variant-numeric: tabular-nums; }
+.gc .gb { height: 120px; width: 100%; display: flex; flex-direction: column-reverse; align-items: stretch; max-width: 22px; }
+.gc .gb i { display: block; width: 100%; }
+.gc .gb i:last-child { border-radius: 4px 4px 0 0; }
+.gc span { font-size: 10.5px; color: var(--muted); white-space: nowrap; }
+.lg { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11.5px; color: var(--muted); }
+.lg span { display: inline-flex; align-items: center; gap: 5px; }
+.lg i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+.top3 { font-size: 12.5px; color: var(--ink-2); }
+.vrow { display: grid; grid-template-columns: minmax(90px, 130px) 1fr 34px; gap: 10px; align-items: center; font-size: 12.5px; }
+.vrow .tr { height: 8px; border-radius: 980px; background: var(--soft); display: flex; overflow: hidden; }
+.vrow .tr i { display: block; height: 100%; }
+.vrow .n { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+.voice { cursor: pointer; transition: box-shadow .15s ease, border-color .15s ease; }
+.voice:hover { border-color: var(--line-2); box-shadow: 0 6px 24px rgba(0,0,0,.06); }
+.more { border: 0; background: none; color: var(--cyan-ink); font-size: 13px; padding: 0; cursor: pointer; justify-self: start; font-weight: 500; }
+
+/* parents' voice pop-up */
+.modal-bg { position: fixed; inset: 0; z-index: 60; background: rgba(29,29,31,.28); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); display: grid; place-items: center; padding: 24px 16px; }
+.modal { background: #fff; border-radius: 22px; width: min(1180px, 100%); max-height: calc(100vh - 48px); overflow-y: auto; box-shadow: 0 30px 80px rgba(0,0,0,.2); }
+.mhd { position: sticky; top: 0; z-index: 2; background: rgba(255,255,255,.92); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); padding: 20px 26px 14px; border-bottom: 1px solid var(--line); display: grid; gap: 12px; }
+.mhd .row1 { display: flex; align-items: start; gap: 16px; }
+.mhd h2 { font-size: 26px; font-weight: 600; letter-spacing: -0.025em; margin: 0; }
+.mhd p { margin: 2px 0 0; color: var(--muted); font-size: 13.5px; }
+.x { margin-left: auto; border: 0; background: var(--soft); width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px; line-height: 1; color: var(--ink-2); flex: none; }
+.mbd { padding: 22px 26px 30px; display: grid; gap: 30px; }
+.mbd h4 { font-size: 17px; font-weight: 600; letter-spacing: -0.015em; margin: 0 0 10px; }
+.mbd h4 span { font-weight: 400; color: var(--muted); font-size: 13px; margin-left: 6px; }
+.personas { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.pcard { background: var(--soft); border-radius: 16px; padding: 16px 18px; display: grid; gap: 10px; align-content: start; }
+.pcard .ch { display: flex; align-items: baseline; gap: 8px; font-weight: 600; font-size: 16px; }
+.pcard .ch span { font-weight: 400; font-size: 12.5px; color: var(--muted); }
+.pcard dl { margin: 0; display: grid; grid-template-columns: 86px 1fr; gap: 6px 10px; font-size: 13px; }
+.pcard dt { color: var(--muted); } .pcard dd { margin: 0; color: var(--ink); }
+.keen { display: flex; height: 8px; border-radius: 980px; overflow: hidden; background: #fff; margin-top: 4px; }
+.keen i { display: block; height: 100%; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--line-2); background: #fff; border-radius: 980px; padding: 4px 11px; font-size: 12.5px; cursor: pointer; color: var(--ink-2); }
+.chip[aria-pressed="true"] { background: var(--navy); border-color: var(--navy); color: #fff; }
+.quotes { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+.qcard { border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; display: grid; gap: 6px; font-size: 13.5px; align-content: start; }
+.qcard .w { color: var(--ink); }
+.qcard .q { color: var(--ink-2); font-style: italic; }
+.qcard .m { font-size: 11.5px; color: var(--muted); display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.tag { display: inline-block; padding: 1px 8px; border-radius: 980px; font-size: 11px; font-weight: 500; }
+.tag.c { background: var(--bad-bg); color: var(--bad); } .tag.i { background: var(--tint); color: var(--cyan-ink); }
+.lock { font-size: 13px; color: var(--muted); background: var(--soft); border-radius: 12px; padding: 12px 14px; }
 .empty { color: var(--muted); font-size: 14px; padding: 14px 16px; }
 
 details.defs { border-top: 1px solid var(--line); padding-top: 18px; color: var(--muted); font-size: 13px; }
@@ -692,44 +747,159 @@ details.defs b { color: var(--ink-2); font-weight: 600; }
       tbody.append(funnelRow("All channels", tot, "total"));
       sec.append(h("div", { class: "panel" }, h("div", { class: "scroll" }, h("table", null, funnelHead("Channel"), tbody))));
       sec.append(h("p", { class: "hint" }, "Open a channel to see its " + "campaigns and ads; Others opens into sources."));
-      sec.append(sayings(ci));
+      sec.append(insights(ci));
       wrap.append(sec);
     }
     if (!campuses.length) wrap.append(h("p", { class: "empty" }, "Pick at least one campus."));
   }
 
-  // Junk/lost reasons by channel for one campus
-  function sayings(ci) {
+  // ---------- three insight panels under each campus ----------
+  const CH_COL = ["#041E42", "#00A3E0", "#7FCFEF", "#C7C7CC"];
+  const GRADES = ["Pre-Kindergarten", "Nursery", "Junior KG", "Senior KG", ...Array.from({ length: 12 }, (_, i) => "Grade " + (i + 1))];
+  const GSHORT = (g) => ({ "Pre-Kindergarten": "Pre-K", Nursery: "Nur", "Junior KG": "JKG", "Senior KG": "SKG" }[g] || g.replace("Grade ", "G"));
+  const TOPIC = { fees: "Fees", transport: "Transport", location: "Location", curriculum: "Curriculum", grade_age: "Grade & age", school_status: "New campus status",
+    timings: "Timings & daycare", facilities: "Facilities", activities: "Activities & sports", teachers_safety: "Teachers & safety", reputation: "GEMS reputation",
+    admission_process: "Admission process", comparing: "Comparing schools", other: "Other" };
+  const tName = (i) => TOPIC[D.topics[i]] || D.topics[i];
+  const sum = (a) => a.reduce((x, y) => x + y, 0);
+  const inRange = (d) => d >= S.from && d <= S.to;
+  const legend = (items) => h("div", { class: "lg" }, items.map(([label, col]) => h("span", null, h("i", { style: "background:" + col }), label)));
+  const KEEN = [["Hot", "#1A7F37"], ["Warm", "#00A3E0"], ["Cold", "#C4302B"], ["Unclear", "#D2D2D7"]];
+
+  function insights(ci) { return h("div", { class: "trio" }, reasonsCard(ci), gradesCard(ci), voiceCard(ci)); }
+
+  // Junk/lost reasons by channel, clubbed into short labels (count; share of the channel's junk/lost on hover)
+  function reasonsCard(ci) {
     const m = {}, colTot = D.channels.map(() => 0);
     for (const l of D.leads) {
-      if (l[1] !== ci || !l[8] || l[0] < S.from || l[0] > S.to) continue;
-      const r = l[9] >= 0 ? D.reasons[l[9]] : "Not recorded";
+      if (l[1] !== ci || !l[8] || !inRange(l[0])) continue;
+      const r = l[9] >= 0 ? D.reasons[l[9]] : "No reason given";
       (m[r] ||= D.channels.map(() => 0))[l[2]]++; colTot[l[2]]++;
     }
-    const n = colTot.reduce((a, b) => a + b, 0);
-    const box = h("div", { class: "say" }, h("h3", null, "What leads are saying", h("span", null, n ? int(n) + " marked junk or lost" : "")));
-    if (!n) { box.append(h("div", { class: "panel empty" }, "No leads were marked junk or lost in this range.")); return box; }
-    let rows = Object.entries(m).sort((a, b) => b[1].reduce((x, y) => x + y) - a[1].reduce((x, y) => x + y));
-    if (rows.length > 9) {
-      const rest = rows.slice(8).reduce((acc, [, v]) => acc.map((x, i) => x + v[i]), D.channels.map(() => 0));
-      rows = [...rows.slice(0, 8), ["Other reasons", rest]];
+    const n = sum(colTot);
+    const card = h("section", { class: "card" }, h("h3", null, "What leads are saying", h("span", null, n ? int(n) + " junk or lost" : "")));
+    if (!n) { card.append(h("p", { class: "empty" }, "No leads marked junk or lost in this range.")); return card; }
+    let rows = Object.entries(m).sort((a, b) => sum(b[1]) - sum(a[1]));
+    if (rows.length > 7) rows = [...rows.slice(0, 6), ["Other reasons", rows.slice(6).reduce((acc, [, v]) => acc.map((x, i) => x + v[i]), D.channels.map(() => 0))]];
+    const chs = D.channels.map((_, i) => i).filter((i) => colTot[i] > 0);
+    card.append(h("table", { class: "mini" },
+      h("thead", null, h("tr", null, h("th", null, "Reason"), chs.map((i) => h("th", { style: "text-align:center" }, D.channels[i])))),
+      h("tbody", null, rows.map(([r, v]) => h("tr", null, h("td", null, r), chs.map((i) => {
+        const share = v[i] / colTot[i];
+        return v[i] ? h("td", { class: "hc", title: pct(v[i], colTot[i]) + " of " + D.channels[i] + "'s junk/lost", style: "background:rgba(0,163,224," + (0.07 + share * 0.5).toFixed(3) + ")" }, int(v[i])) : h("td", { class: "hc z" }, "–");
+      }))))));
+    return card;
+  }
+
+  // Grades asked for: one column per grade, stacked by channel
+  function gradesCard(ci) {
+    const g = {}; let n = 0;
+    for (const l of D.leads) { if (l[1] !== ci || !inRange(l[0])) continue; (g[D.labels[l[13]]] ||= D.channels.map(() => 0))[l[2]]++; n++; }
+    const known = GRADES.filter((x) => g[x]), card = h("section", { class: "card" }, h("h3", null, "Grades parents ask for", h("span", null, n ? int(n) + " leads" : "")));
+    if (!known.length) { card.append(h("p", { class: "empty" }, "No leads with a grade in this range.")); return card; }
+    const max = Math.max(...known.map((x) => sum(g[x]))), tot = sum(known.map((x) => sum(g[x])));
+    const chs = D.channels.map((_, i) => i).filter((i) => known.some((x) => g[x][i]));
+    const first = GRADES.indexOf(known[0]), last = GRADES.indexOf(known[known.length - 1]);
+    card.append(h("div", { class: "gcols" }, GRADES.slice(first, last + 1).map((x) => {
+      const v = g[x] || D.channels.map(() => 0), t = sum(v);
+      return h("div", { class: "gc", title: x + ": " + t + " leads" + (t ? " (" + chs.filter((i) => v[i]).map((i) => D.channels[i] + " " + v[i]).join(", ") + ")" : "") },
+        h("b", null, t || ""), h("div", { class: "gb" }, chs.map((i) => (v[i] ? h("i", { style: "height:" + (100 * v[i]) / max + "%;background:" + CH_COL[i] }) : null))), h("span", null, GSHORT(x)));
+    })));
+    const top = [...known].sort((a, b) => sum(g[b]) - sum(g[a])).slice(0, 3);
+    const unset = g["(not set)"] ? sum(g["(not set)"]) : 0;
+    card.append(h("div", { class: "top3" }, "Most asked: " + top.map((x) => x + " " + pct(sum(g[x]), tot)).join(" · ") + (unset ? " · " + unset + " with no grade" : "")));
+    card.append(legend(chs.map((i) => [D.channels[i], CH_COL[i]])));
+    return card;
+  }
+
+  // Parents' voice: what parents raised on audited calls (from the call audit), by channel
+  // voice: [day, campus, channel, intent 0 hot / 1 warm / 2 cold / 3 unclear, visit booked, [[topic, 0 concern / 1 interest]] or null, grade, text or null]
+  const voiceOf = (ci) => (D.voice || []).filter((v) => v[1] === ci && inRange(v[0]));
+  function topicCounts(list) {   // per topic: [concern mentions, interest mentions, calls that raised it]
+    const t = D.topics.map(() => [0, 0, 0]);
+    for (const v of list) { const seen = new Set(); for (const [k, kind] of v[5] || []) { t[k][kind]++; if (!seen.has(k)) { seen.add(k); t[k][2]++; } } }
+    return t;
+  }
+  const rankTopics = (t) => t.map((x, i) => i).filter((i) => t[i][2]).sort((a, b) => t[b][2] - t[a][2]);
+  function topicBars(t, n, limit) {
+    const order = rankTopics(t).slice(0, limit), max = order.length ? t[order[0]][2] : 1;
+    return order.map((i) => { const [c, it, k] = t[i], w = (100 * k) / max;
+      return h("div", { class: "vrow", title: tName(i) + ": raised on " + k + " of " + n + " calls (" + c + " concerns, " + it + " interest)" }, h("span", null, tName(i)),
+        h("div", { class: "tr" }, h("i", { style: "width:" + (w * c) / (c + it) + "%;background:var(--bad)" }), h("i", { style: "width:" + (w * it) / (c + it) + "%;background:var(--cyan)" })), h("span", { class: "n" }, pct(k, n))); });
+  }
+  function voiceCard(ci) {
+    const all = voiceOf(ci), tagged = all.filter((v) => v[5]);
+    const open = () => openVoice(ci);
+    const card = h("section", { class: "card voice", role: "button", tabindex: "0", "aria-label": "Open parents' voice", onclick: open,
+      onkeydown: (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } } },
+      h("h3", null, "Parents' voice", h("span", null, tagged.length ? int(tagged.length) + " calls analysed" : "")));
+    if (!tagged.length) { card.append(h("p", { class: "empty" }, all.length ? int(all.length) + " audited calls in this range; what parents raised is added to them each night." : "No audited calls with these leads in this range yet.")); return card; }
+    card.append(h("div", { style: "display:grid;gap:8px" }, topicBars(topicCounts(tagged), tagged.length, 6)));
+    card.append(legend([["Concern", "var(--bad)"], ["Interest", "var(--cyan)"]]));
+    card.append(h("button", { class: "more", type: "button", onclick: (e) => { e.stopPropagation(); open(); } }, "Open parents' voice by channel →"));
+    return card;
+  }
+
+  function openVoice(ci) {
+    closePop();
+    const st = { ch: -1, topic: -1 };
+    const bg = h("div", { class: "modal-bg" }), modal = h("div", { class: "modal", role: "dialog", "aria-modal": "true", "aria-label": "Parents' voice" });
+    const close = () => { bg.remove(); document.removeEventListener("keydown", esc); document.body.style.overflow = ""; };
+    const esc = (e) => { if (e.key === "Escape") close(); };
+    bg.onclick = (e) => { if (e.target === bg) close(); };
+    document.addEventListener("keydown", esc); document.body.style.overflow = "hidden";
+    bg.append(modal); document.body.append(bg);
+    const name = short(D.campuses[ci]);
+    function persona(ch, vs) {
+      const gr = {}; for (const l of D.leads) if (l[1] === ci && l[2] === ch && inRange(l[0]) && GRADES.includes(D.labels[l[13]])) gr[D.labels[l[13]]] = (gr[D.labels[l[13]]] || 0) + 1;
+      const gt = sum(Object.values(gr)), topG = Object.entries(gr).sort((a, b) => b[1] - a[1]).slice(0, 3);
+      const t = topicCounts(vs), byKind = (k) => t.map((x, i) => i).filter((i) => t[i][k]).sort((a, b) => t[b][k] - t[a][k]).slice(0, 3).map(tName).join(", ") || "–";
+      const keen = [0, 0, 0, 0]; vs.forEach((v) => keen[v[3]]++);
+      const booked = sum(vs.map((v) => v[4]));
+      return h("div", { class: "pcard" }, h("div", { class: "ch" }, h("span", { style: "width:10px;height:10px;border-radius:3px;display:inline-block;background:" + CH_COL[ch] }), D.channels[ch], h("span", null, int(vs.length) + " calls · " + int(gt) + " leads")),
+        h("dl", null,
+          h("dt", null, "Grades"), h("dd", null, topG.length ? topG.map(([x, k]) => GSHORT(x) === x ? x : x + " " + pct(k, gt)).join(", ") : "–"),
+          h("dt", null, "Worried about"), h("dd", null, byKind(0)),
+          h("dt", null, "Looking for"), h("dd", null, byKind(1)),
+          h("dt", null, "Keenness"), h("dd", null, vs.length ? pct(keen[0] + keen[1], vs.length) + " hot or warm" : "–", vs.length ? h("div", { class: "keen" }, keen.map((k, i) => (k ? h("i", { style: "flex:" + k + ";background:" + KEEN[i][1], title: KEEN[i][0] + ": " + k }) : null))) : null),
+          h("dt", null, "Visit booked"), h("dd", null, vs.length ? pct(booked, vs.length) + " of these calls" : "–")));
     }
-    const chs = D.channels.map((c, i) => i).filter((i) => colTot[i] > 0);
-    const head = h("thead", null, h("tr", null, h("th", { class: "first" }, "Reason"), chs.map((i) => h("th", null, D.channels[i] + " (" + int(colTot[i]) + ")")), h("th", { class: "g0" }, "All")));
-    const body = h("tbody");
-    for (const [r, v] of rows) {
-      const tr = h("tr", null, h("td", { class: "first" }, r));
-      for (const i of chs) {
-        const share = colTot[i] ? v[i] / colTot[i] : 0;
-        tr.append(h("td", { class: "heat" + (v[i] ? "" : " na"), style: v[i] ? "background:rgba(0,163,224," + (0.05 + share * 0.45).toFixed(3) + ")" : null },
-          v[i] ? [int(v[i]), h("span", { class: "p" }, pct(v[i], colTot[i]))] : "–"));
+    function render() {
+      const all = voiceOf(ci).filter((v) => v[5]), chs = D.channels.map((_, i) => i).filter((i) => all.some((v) => v[2] === i));
+      const list = all.filter((v) => st.ch < 0 || v[2] === st.ch);
+      const seg = h("div", { class: "seg", role: "group", "aria-label": "Channel" }, [["All channels", -1], ...chs.map((i) => [D.channels[i], i])].map(([l, i]) =>
+        h("button", { type: "button", "aria-pressed": String(st.ch === i), onclick: () => { st.ch = i; render(); } }, l)));
+      const head = h("div", { class: "mhd" }, h("div", { class: "row1" }, h("div", null, h("h2", null, "Parents' voice · " + name),
+        h("p", null, int(all.length) + " audited calls with this campus's leads · " + span(S.from, S.to) + " · topics tagged by Claude from the call transcripts")),
+        h("button", { class: "x", type: "button", "aria-label": "Close", onclick: close }, "×")), chs.length > 1 ? seg : null);
+      const body = h("div", { class: "mbd" });
+      if (!all.length) body.append(h("p", { class: "empty" }, "No analysed calls for this campus in this range yet."));
+      else {
+        body.append(h("section", null, h("h4", null, "Who's calling", h("span", null, "parent persona by channel")), h("div", { class: "personas" }, (st.ch < 0 ? chs : [st.ch]).map((ch) => persona(ch, all.filter((v) => v[2] === ch))))));
+        const t = topicCounts(list), order = rankTopics(t);
+        const cols = st.ch < 0 ? chs : [st.ch], per = cols.map((ch) => all.filter((v) => v[2] === ch)), pt = per.map(topicCounts);
+        body.append(h("section", null, h("h4", null, "What they raise", h("span", null, "share of each channel's calls · tap a topic to read the calls")),
+          h("table", { class: "mini" }, h("thead", null, h("tr", null, h("th", null, "Topic"), cols.map((ch, j) => h("th", { style: "text-align:center" }, D.channels[ch] + " (" + per[j].length + ")")), h("th", { style: "text-align:center" }, "Mostly"))),
+            h("tbody", null, order.map((k) => h("tr", { style: "cursor:pointer", onclick: () => { st.topic = st.topic === k ? -1 : k; render(); } },
+              h("td", null, h("b", { style: "font-weight:" + (st.topic === k ? 600 : 400) }, tName(k))),
+              cols.map((ch, j) => { const c = pt[j][k][2], n = per[j].length, sh = n ? c / n : 0;
+                return c ? h("td", { class: "hc", style: "background:rgba(0,163,224," + (0.07 + sh * 0.6).toFixed(3) + ")", title: c + " of " + n + " calls" }, pct(c, n)) : h("td", { class: "hc z" }, "–"); }),
+              h("td", { style: "text-align:center" }, t[k][0] >= t[k][1] ? h("span", { class: "tag c" }, "Concern") : h("span", { class: "tag i" }, "Interest"))))))));
+        const words = list.filter((v) => st.topic < 0 || (v[5] || []).some(([k]) => k === st.topic)).sort((a, b) => (b[0] > a[0] ? 1 : -1));
+        const chips = h("div", { class: "chips" }, [[-1, "All topics"], ...order.slice(0, 10).map((k) => [k, tName(k)])].map(([k, l]) =>
+          h("button", { class: "chip", type: "button", "aria-pressed": String(st.topic === k), onclick: () => { st.topic = k; render(); } }, l)));
+        const sec = h("section", null, h("h4", null, "In their words", h("span", null, int(words.length) + " calls")), chips);
+        if (words.length && words[0][7] == null) sec.append(h("p", { class: "lock", style: "margin-top:12px" }, "Parents' own words are visible to the GEMS corporate login only. The counts above cover every analysed call."));
+        else sec.append(h("div", { class: "quotes", style: "margin-top:12px" }, words.slice(0, 40).map((v) => {
+          const qs = (v[7].q || []).filter(([k]) => st.topic < 0 || k === st.topic).slice(0, 2);
+          return h("div", { class: "qcard" }, v[7].v ? h("div", { class: "w" }, v[7].v) : null, qs.map(([k, kind, q]) => h("div", { class: "q" }, h("span", { class: "tag " + (kind ? "i" : "c") }, tName(k)), " “" + q + "”")),
+            h("div", { class: "m" }, fmt(v[0]), "·", D.channels[v[2]], D.labels[v[6]] !== "(not set)" ? ["·", D.labels[v[6]]] : null, "·", h("span", { style: "color:" + KEEN[v[3]][1] }, KEEN[v[3]][0]), v[4] ? ["·", "visit booked"] : null));
+        })));
+        body.append(sec);
       }
-      const t = v.reduce((a, b) => a + b, 0);
-      tr.append(h("td", { class: "g0" }, int(t), h("span", { class: "p" }, pct(t, n))));
-      body.append(tr);
+      modal.replaceChildren(head, body);
     }
-    box.append(h("div", { class: "panel" }, h("div", { class: "scroll" }, h("table", null, head, body))));
-    return box;
+    render(); modal.querySelector(".x").focus({ preventScroll: true });
   }
 
   // ---------- week on week ----------

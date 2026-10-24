@@ -25,6 +25,8 @@ def subset(d, allowed):
     out["students"] = [[cmap[x[0]]] + x[1:4] + [lab(v) for v in x[4:]] for x in d["students"] if x[0] in cmap]
     out["fees"] = [x[:1] + [cmap[x[1]]] + x[2:4] + [lab(v) for v in x[4:]] for x in d["fees"] if x[1] in cmap]
     out["spend"] = [x[:1] + [cmap[x[1]]] + x[2:8] + [lab(x[8])] for x in d["spend"] if x[1] in cmap]
+    # parents' words (what they want, quotes) stay with the corporate login; agencies see the topic counts only
+    out["voice"] = [x[:1] + [cmap[x[1]]] + x[2:6] + [lab(x[6])] + [x[7] if allowed == "all" else None] for x in d.get("voice", []) if x[1] in cmap]
     return out
 
 
