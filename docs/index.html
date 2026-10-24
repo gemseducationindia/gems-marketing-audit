@@ -894,7 +894,7 @@ details.defs b { color: var(--ink-2); font-weight: 600; }
           h("dt", null, "Looking for"), h("dd", null, byKind(1)),
           h("dt", null, "Keenness"), h("dd", null, vs.length ? pct(keen[0] + keen[1], vs.length) + " hot or warm" : "–", vs.length ? h("div", { class: "keen" }, keen.map((k, i) => (k ? h("i", { style: "flex:" + k + ";background:" + KEEN[i][1], title: KEEN[i][0] + ": " + k }) : null))) : null),
           h("dt", null, "Visit booked"), h("dd", null, vs.length ? pct(booked, vs.length) + " of these calls" : "–"),
-          facts.map(([k, v]) => [h("dt", null, k), h("dd", null, v)]),
+          ...facts.flatMap(([k, v]) => [h("dt", null, k), h("dd", null, v)]),
           h("dt", null, "Converts"), h("dd", null, ld.length ? pct(lv, ld.length) + " visited · " + int(le) + " enrolled (" + pct(le, ld.length) + ")" : "–")),
         ai ? h("div", { class: "ai" }, h("p", null, ai[2]), h("p", { class: "tip" }, h("b", null, "For the agency: "), ai[3]), h("span", { class: "by" }, "Written by Claude from " + ai[4] + " calls · " + fmt(ai[5]))) : null);
     }
