@@ -205,6 +205,8 @@ td .p { color: var(--muted); font-weight: 400; font-size: 12px; margin-left: 4px
 .vrow .tr { height: 8px; border-radius: 980px; background: var(--soft); display: flex; overflow: hidden; }
 .vrow .tr i { display: block; height: 100%; }
 .vrow .n { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+.dl { flex: none; border: 1px solid var(--line-2); background: #fff; border-radius: 980px; height: 28px; padding: 0 12px; font-size: 12.5px; color: var(--ink-2); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.dl:hover { border-color: var(--faint); background: var(--soft); }
 .voice { cursor: pointer; transition: box-shadow .15s ease, border-color .15s ease; }
 .voice:hover { border-color: var(--line-2); box-shadow: 0 6px 24px rgba(0,0,0,.06); }
 .more { border: 0; background: none; color: var(--cyan-ink); font-size: 13px; padding: 0; cursor: pointer; justify-self: start; font-weight: 500; }
@@ -731,6 +733,7 @@ details.defs b { color: var(--ink-2); font-weight: 600; }
       const c = D.campuses[ci], tot = byCampus(ci), ag = agencyOf(c);
       const sec = h("section", { class: "campus", id: "campus-" + short(c).replace(/\W+/g, "-").toLowerCase() });
       sec.append(h("div", { class: "chead" }, h("h2", null, short(c)), h("span", { class: "ag" }, ag === "No agency" ? "No agency" : "Agency · " + ag),
+        h("button", { class: "dl", type: "button", title: "Everything held on each lead for " + span(S.from, S.to) + ": contact details, campaign, calling, visits, fees, what the parent said on calls", onclick: () => downloadLeads(ci) }, "↓ Leads CSV"),
         h("span", { class: "meta" }, int(tot.leads) + " leads · " + int(tot.enrols) + " enrollments · " + span(S.from, S.to))));
 
       const tbody = h("tbody");
@@ -757,6 +760,19 @@ details.defs b { color: var(--ink-2); font-weight: 600; }
       wrap.append(sec);
     }
     if (!campuses.length) wrap.append(h("p", { class: "empty" }, "Pick at least one campus."));
+  }
+
+  // Lead-level CSV for one campus and the current date range (phone and email included)
+  function downloadLeads(ci) {
+    const cols = ["Lead ID", "Created", "Campus", "Channel", "Source", "Campaign", "Ad", "Grade", "CRM status", "Phone", "Email", "Contacted", "Dials", "Connects",
+      "Visit scheduled", "Visit done", "Junk or lost", "Reason", "Applied", "Enrolled", ...(D.lead_cols || [])];
+    const yn = (v) => (v ? "Yes" : "No"), nz = (i) => (i >= 0 && D.labels[i] !== "(not set)" ? D.labels[i] : "");
+    const rows = D.leads.filter((l) => l[1] === ci && inRange(l[0])).sort((a, b) => (a[0] < b[0] ? 1 : -1)).map((l) => [l[16], l[0], short(D.campuses[ci]), D.channels[l[2]],
+      nz(l[10]), nz(l[11]), nz(l[12]), nz(l[13]), l[19], l[17], l[18], yn(l[3]), l[4], l[5], yn(l[6]), yn(l[7]), yn(l[8]), l[9] >= 0 ? D.reasons[l[9]] : "", yn(l[14]), yn(l[15]), ...l.slice(20)]);
+    const cell = (v) => { let t = String(v == null ? "" : v); if (/^[=+\-@\t\r]/.test(t)) t = "'" + t; return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+    const csv = "\ufeff" + [cols, ...rows].map((r) => r.map(cell).join(",")).join("\r\n");
+    const a = h("a", { href: URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" })), download: "leads-" + short(D.campuses[ci]).replace(/\W+/g, "-").toLowerCase() + "-" + S.from + "-to-" + S.to + ".csv" });
+    document.body.append(a); a.click(); a.remove();
   }
 
   // ---------- three insight panels under each campus ----------
