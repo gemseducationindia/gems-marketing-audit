@@ -1,0 +1,1106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>GEMS Marketing Audit</title>
+<link rel="icon" href="favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Light only. GEMS navy (#041E42) for emphasis and selection, GEMS cyan (#00A3E0) for highlights; Apple-style neutrals. */
+:root {
+  --navy: #041E42; --cyan: #00A3E0; --cyan-ink: #0077A8; --tint: #E8F6FC; --tint-2: #CDEBF8;
+  --bg: #FFFFFF; --soft: #F5F5F7; --line: #E5E5EA; --line-2: #D2D2D7;
+  --ink: #1D1D1F; --ink-2: #424245; --muted: #6E6E73; --faint: #A1A1A6;
+  --good: #1A7F37; --good-bg: #E9F6EC; --bad: #C4302B; --bad-bg: #FCEDEC;
+  --nav-h: 52px; --radius: 14px;
+  color-scheme: light;
+}
+[hidden] { display: none !important; }
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); }
+body { font: 15px/1.47 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; letter-spacing: -0.01em; }
+button { font: inherit; color: inherit; letter-spacing: inherit; }
+:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; border-radius: 6px; }
+.num { font-variant-numeric: tabular-nums; }
+.wrap { max-width: 1440px; margin: 0 auto; padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+@media (min-width: 900px) { .wrap { padding-inline: 32px; } }
+
+/* ---------- sign in ---------- */
+#gate { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; background: linear-gradient(180deg, #FFFFFF 0%, var(--soft) 100%); }
+.signin { width: 100%; max-width: 380px; display: grid; gap: 22px; text-align: center; }
+.logo { display: inline-flex; align-items: center; gap: 10px; justify-self: center; font-weight: 600; font-size: 15px; color: var(--navy); letter-spacing: -0.01em; }
+.logo .m { display: block; width: 28px; height: 28px; }
+.signin .logo .m { width: 40px; height: 40px; }
+.signin h1 { font-size: 40px; line-height: 1.08; font-weight: 600; letter-spacing: -0.03em; margin: 0; }
+.signin p { margin: -10px 0 0; color: var(--muted); font-size: 17px; }
+.fields { display: grid; border: 1px solid var(--line-2); border-radius: 12px; overflow: hidden; background: #fff; text-align: left; }
+.fields input { font: inherit; font-size: 17px; border: 0; padding: 15px 16px; background: transparent; color: var(--ink); outline: none; }
+.fields input + input { border-top: 1px solid var(--line); }
+.fields:focus-within { border-color: var(--cyan); box-shadow: 0 0 0 4px var(--tint); }
+.keep { display: flex; gap: 8px; align-items: center; justify-content: center; color: var(--muted); font-size: 14px; }
+.btn-primary { border: 0; background: var(--navy); color: #fff; border-radius: 980px; padding: 13px 22px; font-size: 17px; font-weight: 500; cursor: pointer; }
+.btn-primary:hover { background: #0A2C5E; }
+.btn-primary[disabled] { opacity: .6; cursor: progress; }
+.err { color: var(--bad); font-size: 14px; min-height: 1.2em; margin: -8px 0 0; }
+
+/* ---------- nav + sticky filters ---------- */
+.top { position: sticky; top: 0; z-index: 30; background: rgba(255,255,255,.82); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); border-bottom: 1px solid var(--line); }
+.nav { height: var(--nav-h); display: flex; align-items: center; gap: 16px; }
+.nav .logo { justify-self: start; }
+.tabs { display: flex; gap: 4px; margin-left: 12px; }
+.tab { border: 0; background: transparent; padding: 6px 12px; border-radius: 980px; font-size: 14px; color: var(--ink-2); cursor: pointer; }
+.tab:hover { background: var(--soft); }
+.tab[aria-selected="true"] { background: var(--ink); color: #fff; }
+.who { margin-left: auto; display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--muted); white-space: nowrap; }
+.who b { color: var(--ink); font-weight: 500; }
+.link { border: 0; background: none; color: var(--cyan-ink); cursor: pointer; padding: 4px 0; font-size: 13px; }
+.bar { display: flex; gap: 10px; align-items: center; padding: 8px 0 10px; overflow-x: auto; scrollbar-width: none; }
+.bar::-webkit-scrollbar { display: none; }
+.ctl { flex: none; display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 14px; border: 1px solid var(--line-2); border-radius: 980px; background: #fff; cursor: pointer; font-size: 14px; white-space: nowrap; }
+.ctl:hover { border-color: var(--faint); }
+.ctl[aria-expanded="true"] { border-color: var(--navy); box-shadow: 0 0 0 3px var(--tint); }
+.ctl .cap { color: var(--muted); }
+.ctl svg { width: 14px; height: 14px; flex: none; color: var(--muted); }
+.seg { flex: none; display: inline-flex; padding: 3px; background: var(--soft); border-radius: 980px; gap: 2px; }
+.seg button { border: 0; background: transparent; height: 28px; padding: 0 12px; border-radius: 980px; font-size: 13px; color: var(--ink-2); cursor: pointer; white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: #fff; color: var(--ink); font-weight: 500; box-shadow: 0 1px 3px rgba(0,0,0,.12), 0 0 0 .5px rgba(0,0,0,.04); }
+.sep { flex: none; width: 1px; height: 20px; background: var(--line); }
+.mobile-tabs { display: none; }
+@media (max-width: 720px) {
+  .nav .tabs { display: none; }
+  .mobile-tabs { display: flex; padding-top: 6px; }
+  .who .name { display: none; }
+}
+
+/* ---------- popovers (calendar, campus picker) ---------- */
+.pop { position: fixed; z-index: 50; background: #fff; border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 24px 60px rgba(0,0,0,.14), 0 2px 8px rgba(0,0,0,.06); }
+.cal { display: grid; grid-template-columns: auto 1fr; }
+.cal .presets { display: grid; align-content: start; gap: 2px; padding: 14px 10px; border-right: 1px solid var(--line); min-width: 150px; }
+.cal .presets button { text-align: left; border: 0; background: none; padding: 7px 12px; border-radius: 8px; font-size: 14px; cursor: pointer; color: var(--ink-2); }
+.cal .presets button:hover { background: var(--soft); }
+.cal .presets button[aria-pressed="true"] { background: var(--tint); color: var(--navy); font-weight: 500; }
+.cal .body { padding: 16px 18px 14px; display: grid; gap: 12px; }
+.cal .months { display: flex; gap: 28px; }
+.cal .month { display: grid; gap: 8px; }
+.cal .mhead { display: flex; align-items: center; justify-content: space-between; height: 28px; font-weight: 600; font-size: 15px; }
+.cal .arrow { border: 0; background: none; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; color: var(--ink-2); display: grid; place-items: center; }
+.cal .arrow:hover:not([disabled]) { background: var(--soft); }
+.cal .arrow[disabled] { color: var(--line-2); cursor: default; }
+.cal .arrow.ghost { visibility: hidden; }
+.cal .grid { display: grid; grid-template-columns: repeat(7, 36px); row-gap: 2px; }
+.cal .dow { font-size: 11px; color: var(--faint); text-align: center; height: 22px; font-weight: 500; text-transform: uppercase; letter-spacing: .04em; }
+.cal .day { position: relative; height: 36px; border: 0; background: none; padding: 0; cursor: pointer; font-size: 14px; font-variant-numeric: tabular-nums; }
+.cal .day span { position: relative; z-index: 1; display: grid; place-items: center; width: 34px; height: 34px; margin: 1px auto; border-radius: 50%; }
+.cal .day:hover:not([disabled]) span { background: var(--soft); }
+.cal .day[disabled] { color: var(--line-2); cursor: default; }
+.cal .day.in::before { content: ""; position: absolute; inset: 1px 0; background: var(--tint); }
+.cal .day.start::before { left: 50%; }
+.cal .day.end::before { right: 50%; }
+.cal .day.start.end::before { display: none; }
+.cal .day.start span, .cal .day.end span { background: var(--navy) !important; color: #fff; font-weight: 600; }
+.cal .day.today span { box-shadow: inset 0 0 0 1px var(--cyan); }
+.cal .foot { display: flex; align-items: center; gap: 10px; border-top: 1px solid var(--line); padding-top: 12px; }
+.cal .foot .sum { font-size: 13px; color: var(--muted); margin-right: auto; }
+.btn { border: 1px solid var(--line-2); background: #fff; border-radius: 980px; padding: 6px 16px; font-size: 14px; cursor: pointer; }
+.btn.dark { background: var(--navy); border-color: var(--navy); color: #fff; }
+.btn[disabled] { opacity: .4; cursor: default; }
+.cal.single { grid-template-columns: 1fr; }
+@media (max-width: 720px) {
+  .cal { grid-template-columns: 1fr; }
+  .cal .presets { border-right: 0; border-bottom: 1px solid var(--line); display: flex; overflow-x: auto; padding: 10px; }
+  .cal .presets button { white-space: nowrap; }
+  .cal .months .month + .month { display: none; }
+  .cal .months .month:first-child .arrow.ghost { visibility: visible; }
+}
+.picker { width: 340px; max-height: min(70vh, 560px); display: grid; grid-template-rows: auto 1fr auto; }
+.picker .ph { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px 8px; font-weight: 600; }
+.picker .list { overflow-y: auto; padding: 0 8px 8px; }
+.picker .grp { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; padding: 12px 8px 4px; display: flex; justify-content: space-between; }
+.picker .grp button { border: 0; background: none; color: var(--cyan-ink); font-size: 12px; text-transform: none; letter-spacing: 0; cursor: pointer; font-weight: 500; }
+.picker label { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 8px; cursor: pointer; font-size: 14px; }
+.picker label:hover { background: var(--soft); }
+.picker input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--navy); margin: 0; }
+.picker label .n { margin-left: auto; color: var(--faint); font-size: 12px; }
+.picker .pf { display: flex; justify-content: space-between; gap: 8px; padding: 10px 16px 14px; border-top: 1px solid var(--line); }
+
+/* ---------- page ---------- */
+main { padding-block: 28px 64px; display: grid; gap: 44px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); grid-auto-flow: column; container-type: inline-size; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.kpi { padding: 18px 16px; display: grid; gap: 4px; grid-row: span 3; grid-template-rows: subgrid; align-content: start; min-width: 0; }
+.kpi:first-child { padding-left: 0; }
+.kpi + .kpi { border-left: 1px solid var(--line); }
+.kpi .k { font-size: 13px; color: var(--muted); }
+.kpi .v { font-size: clamp(22px, 2.3cqi, 32px); line-height: 1.1; font-weight: 600; letter-spacing: -0.025em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.kpi .s { font-size: 12px; color: var(--muted); }
+/* narrower screens: four cards a row, lines between them */
+@media (max-width: 1180px) {
+  .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-flow: row; }
+  .kpi, .kpi:first-child { padding: 16px; }
+  .kpi:nth-child(4n+1) { padding-left: 0; border-left: 0; }
+  .kpi:nth-child(n+5) { border-top: 1px solid var(--line); }
+  .kpi .v { font-size: 28px; }
+  /* the summary has nine cards: three rows of three */
+  #sumKpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  #sumKpis .kpi:nth-child(n) { padding-left: 16px; border-left: 1px solid var(--line); }
+  #sumKpis .kpi:nth-child(3n+1) { padding-left: 0; border-left: 0; }
+  #sumKpis .kpi:nth-child(n+4) { border-top: 1px solid var(--line); }
+}
+@media (max-width: 720px) {
+  .kpis, #sumKpis { grid-template-columns: 1fr 1fr; }
+  .kpis .kpi, #sumKpis .kpi:nth-child(n) { padding: 14px 12px; border-left: 0; border-top: 1px solid var(--line); }
+  .kpis .kpi:nth-child(-n+2), #sumKpis .kpi:nth-child(-n+2) { border-top: 0; }
+  .kpi .v { font-size: 26px; }
+}
+
+.campus { display: grid; gap: 18px; scroll-margin-top: 130px; }
+.chead { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.chead h2 { font-size: 28px; font-weight: 600; letter-spacing: -0.025em; margin: 0; }
+.chead .ag { font-size: 14px; color: var(--muted); }
+.chead .meta { margin-left: auto; font-size: 13px; color: var(--muted); }
+.panel { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: #fff; }
+.scroll { overflow-x: auto; }
+table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
+th, td { padding: 9px 12px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--line); }
+thead th { font-weight: 500; color: var(--muted); font-size: 12px; background: var(--soft); vertical-align: bottom; }
+thead tr.groups th { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; font-weight: 600; color: var(--ink-2); text-align: left; border-bottom: 0; padding-bottom: 2px; }
+thead tr.cols th { padding-top: 2px; }
+.g0 { border-left: 1px solid var(--line); }
+.first { position: sticky; left: 0; z-index: 2; background: #fff; text-align: left; min-width: 210px; max-width: 320px; overflow: hidden; text-overflow: ellipsis; box-shadow: 1px 0 0 var(--line); }
+thead .first { background: var(--soft); z-index: 3; }
+tbody tr:hover td { background: #FAFAFC; }
+tbody tr:hover td.first { background: #FAFAFC; }
+tr.lvl0 td.first { font-weight: 500; }
+tr.lvl1 td { color: var(--ink-2); }
+tr.lvl1 td.first { padding-left: 34px; }
+tr.lvl2 td { color: var(--muted); font-size: 12.5px; }
+tr.lvl2 td.first { padding-left: 58px; }
+tr.total td { font-weight: 600; background: var(--soft); border-bottom: 0; }
+tr.total td.first { background: var(--soft); }
+td.na { color: var(--line-2); }
+td .p { color: var(--muted); font-weight: 400; font-size: 12px; margin-left: 4px; }
+.exp { border: 0; background: none; padding: 0; margin: 0 6px 0 -4px; width: 22px; height: 22px; border-radius: 6px; cursor: pointer; vertical-align: middle; color: var(--muted); display: inline-grid; place-items: center; }
+.exp:hover { background: var(--line); color: var(--ink); }
+.exp svg { width: 12px; height: 12px; transition: transform .15s ease; }
+.exp[aria-expanded="true"] svg { transform: rotate(90deg); }
+.exp.none { visibility: hidden; }
+.hint { font-size: 12px; color: var(--muted); margin: -8px 0 0; }
+
+/* three insight panels under each campus: why leads drop, grades asked for, parents' voice */
+.trio { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; align-items: stretch; }
+@media (max-width: 1180px) { .trio { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 760px) { .trio { grid-template-columns: 1fr; } }
+.card { border: 1px solid var(--line); border-radius: var(--radius); background: #fff; padding: 16px 18px; display: grid; gap: 12px; align-content: start; min-width: 0; }
+.card h3 { font-size: 15px; font-weight: 600; letter-spacing: -0.015em; margin: 0; display: flex; align-items: baseline; gap: 8px; }
+.card h3 span { font-weight: 400; color: var(--muted); font-size: 12.5px; }
+.card .empty { padding: 0; font-size: 13px; }
+.mini { width: 100%; font-size: 12.5px; }
+.mini th, .mini td { padding: 5px 6px; border-bottom: 1px solid var(--line); }
+.mini th { background: none; font-size: 11px; color: var(--muted); font-weight: 500; }
+.mini td:first-child, .mini th:first-child { text-align: left; padding-left: 0; white-space: normal; }
+.mini tr:last-child td { border-bottom: 0; }
+.mini td.hc { text-align: center; border-radius: 6px; font-weight: 500; }
+.mini td.hc.z { color: var(--line-2); font-weight: 400; }
+.gcols { display: flex; align-items: flex-end; gap: 3px; }
+.gc { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+.gc b { font-size: 10.5px; font-weight: 500; color: var(--muted); height: 13px; font-variant-numeric: tabular-nums; }
+.gc .gb { height: 120px; width: 100%; display: flex; flex-direction: column-reverse; align-items: stretch; max-width: 22px; }
+.gc .gb i { display: block; width: 100%; }
+.gc .gb i:last-child { border-radius: 4px 4px 0 0; }
+.gc span { font-size: 10.5px; color: var(--muted); white-space: nowrap; }
+.lg { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11.5px; color: var(--muted); }
+.lg span { display: inline-flex; align-items: center; gap: 5px; }
+.lg i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+.top3 { font-size: 12.5px; color: var(--ink-2); }
+.vrow { display: grid; grid-template-columns: minmax(90px, 130px) 1fr 34px; gap: 10px; align-items: center; font-size: 12.5px; }
+.vrow .tr { height: 8px; border-radius: 980px; background: var(--soft); display: flex; overflow: hidden; }
+.vrow .tr i { display: block; height: 100%; }
+.vrow .n { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+.dl { flex: none; border: 1px solid var(--line-2); background: #fff; border-radius: 980px; height: 28px; padding: 0 12px; font-size: 12.5px; color: var(--ink-2); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.dl:hover { border-color: var(--faint); background: var(--soft); }
+.voice { cursor: pointer; transition: box-shadow .15s ease, border-color .15s ease; }
+.voice:hover { border-color: var(--line-2); box-shadow: 0 6px 24px rgba(0,0,0,.06); }
+.more { border: 0; background: none; color: var(--cyan-ink); font-size: 13px; padding: 0; cursor: pointer; justify-self: start; font-weight: 500; }
+
+/* parents' voice pop-up */
+.modal-bg { position: fixed; inset: 0; z-index: 60; background: rgba(29,29,31,.28); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); display: grid; place-items: center; padding: 24px 16px; }
+.modal { background: #fff; border-radius: 22px; width: min(1180px, 100%); max-height: calc(100vh - 48px); overflow-y: auto; box-shadow: 0 30px 80px rgba(0,0,0,.2); }
+.mhd { position: sticky; top: 0; z-index: 2; background: rgba(255,255,255,.92); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); padding: 20px 26px 14px; border-bottom: 1px solid var(--line); display: grid; gap: 12px; }
+.mhd .row1 { display: flex; align-items: start; gap: 16px; }
+.mhd h2 { font-size: 26px; font-weight: 600; letter-spacing: -0.025em; margin: 0; }
+.mhd p { margin: 2px 0 0; color: var(--muted); font-size: 13.5px; }
+.x { margin-left: auto; border: 0; background: var(--soft); width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px; line-height: 1; color: var(--ink-2); flex: none; }
+.mbd { padding: 22px 26px 30px; display: grid; gap: 30px; }
+.mbd h4 { font-size: 17px; font-weight: 600; letter-spacing: -0.015em; margin: 0 0 10px; }
+.mbd h4 span { font-weight: 400; color: var(--muted); font-size: 13px; margin-left: 6px; }
+.two-col { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 860px) { .two-col { grid-template-columns: 1fr; } }
+.personas { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.pcard { background: var(--soft); border-radius: 16px; padding: 16px 18px; display: grid; gap: 10px; align-content: start; }
+.pcard .ch { display: flex; align-items: baseline; gap: 8px; font-weight: 600; font-size: 16px; }
+.pcard .ch span { font-weight: 400; font-size: 12.5px; color: var(--muted); }
+.pcard dl { margin: 0; display: grid; grid-template-columns: 86px 1fr; gap: 6px 10px; font-size: 13px; }
+.pcard dt { color: var(--muted); } .pcard dd { margin: 0; color: var(--ink); }
+.keen { display: flex; height: 8px; border-radius: 980px; overflow: hidden; background: #fff; margin-top: 4px; }
+.keen i { display: block; height: 100%; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--line-2); background: #fff; border-radius: 980px; padding: 4px 11px; font-size: 12.5px; cursor: pointer; color: var(--ink-2); }
+.chip[aria-pressed="true"] { background: var(--navy); border-color: var(--navy); color: #fff; }
+.quotes { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+.qcard { border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; display: grid; gap: 6px; font-size: 13.5px; align-content: start; }
+.qcard .w { color: var(--ink); }
+.qcard .q { color: var(--ink-2); font-style: italic; }
+.qcard .m { font-size: 11.5px; color: var(--muted); display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.tag { display: inline-block; padding: 1px 8px; border-radius: 980px; font-size: 11px; font-weight: 500; }
+.tag.c { background: var(--bad-bg); color: var(--bad); } .tag.i { background: var(--tint); color: var(--cyan-ink); }
+.lock { font-size: 13px; color: var(--muted); background: var(--soft); border-radius: 12px; padding: 12px 14px; }
+.ai { background: #fff; border-radius: 12px; padding: 10px 12px; font-size: 13.5px; line-height: 1.45; display: grid; gap: 6px; }
+.ai p { margin: 0; } .ai .tip { color: var(--ink-2); } .ai .tip b { color: var(--navy); font-weight: 600; }
+.ai .by { font-size: 11px; color: var(--muted); }
+tr.best td { font-weight: 600; } tr.best td:first-child::after { content: " ★"; color: #D9A21B; }
+.empty { color: var(--muted); font-size: 14px; padding: 14px 16px; }
+
+details.defs { border-top: 1px solid var(--line); padding-top: 18px; color: var(--muted); font-size: 13px; }
+details.defs summary { cursor: pointer; color: var(--ink-2); font-weight: 500; font-size: 14px; }
+details.defs p { margin: 10px 0 0; max-width: 120ch; }
+details.defs b { color: var(--ink-2); font-weight: 600; }
+.fresh { font-size: 12px; color: var(--muted); }
+
+/* ---------- week on week ---------- */
+.wowhead { display: flex; align-items: end; gap: 24px; flex-wrap: wrap; }
+.wowhead h1 { font-size: 34px; font-weight: 600; letter-spacing: -0.03em; margin: 0; line-height: 1.1; }
+.wowhead p { margin: 6px 0 0; color: var(--muted); }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+.wcard { background: var(--soft); border-radius: var(--radius); padding: 18px 20px; display: grid; gap: 6px; }
+.wcard .k { font-size: 13px; color: var(--muted); }
+.wcard .v { font-size: 34px; font-weight: 600; letter-spacing: -0.03em; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.wcard .row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.delta { display: inline-flex; align-items: center; gap: 2px; font-weight: 600; font-size: 12px; padding: 2px 8px; border-radius: 980px; background: var(--soft); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.wcard .delta { background: #fff; }
+.delta.up { color: var(--good); background: var(--good-bg); }
+.delta.down { color: var(--bad); background: var(--bad-bg); }
+.wow td.first { min-width: 190px; }
+.wow tr.stage td { background: #fff; font-size: 11px; text-transform: uppercase; letter-spacing: .07em; font-weight: 600; color: var(--ink-2); padding-top: 16px; text-align: left; }
+.wow tr.stage td.first { background: #fff; }
+.wow td .delta { margin-top: 3px; padding: 1px 6px; font-size: 11px; }
+.wow th.tot, .wow td.tot { border-right: 1px solid var(--line); background: var(--soft); }
+.wow th.first, .wow td.first { min-width: 190px; }
+#wow .scroll { max-height: calc(100vh - 130px); overflow: auto; }
+.wow thead th { position: sticky; top: 0; z-index: 2; box-shadow: inset 0 -1px 0 var(--line); }
+.wow thead th.first { z-index: 4; box-shadow: 1px 0 0 var(--line), inset 0 -1px 0 var(--line); }
+table.sum td.first small { display: block; color: var(--muted); font-weight: 400; font-size: 11px; }
+.note { font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div id="gate" hidden>
+  <form class="signin" id="signin" autocomplete="on">
+    <span class="logo"><img class="m" src="logo.png" alt="GEMS" width="28" height="28">GEMS Education</span>
+    <h1>Marketing Audit</h1>
+    <p>Sign in to see your campuses.</p>
+    <div class="fields">
+      <input id="user" name="username" placeholder="Username" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+      <input id="pass" name="password" type="password" placeholder="Password" autocomplete="current-password" required>
+    </div>
+    <label class="keep"><input type="checkbox" id="keep" checked> Keep me signed in on this device</label>
+    <button class="btn-primary" id="go" type="submit">Sign in</button>
+    <p class="err" id="err" role="alert"></p>
+  </form>
+</div>
+
+<div id="app" hidden>
+  <div class="top">
+    <div class="wrap">
+      <nav class="nav">
+        <span class="logo"><img class="m" src="logo.png" alt="GEMS" width="28" height="28">Marketing Audit</span>
+        <div class="tabs" role="tablist">
+          <button class="tab" role="tab" data-tab="funnel" aria-selected="true">Funnel</button>
+          <button class="tab" role="tab" data-tab="wow" aria-selected="false">Week on week</button>
+          <button class="tab" role="tab" data-tab="summary" aria-selected="false">Overall summary</button>
+        </div>
+        <div class="who"><span class="name">Signed in as <b id="whoName"></b></span><button class="link" id="signout">Sign out</button></div>
+      </nav>
+      <div class="tabs mobile-tabs" role="tablist">
+        <button class="tab" role="tab" data-tab="funnel" aria-selected="true">Funnel</button>
+        <button class="tab" role="tab" data-tab="wow" aria-selected="false">Week on week</button>
+          <button class="tab" role="tab" data-tab="summary" aria-selected="false">Overall summary</button>
+      </div>
+      <div class="bar" id="bar" aria-label="Filters"></div>
+    </div>
+  </div>
+
+  <main class="wrap" id="funnel">
+    <section class="kpis" id="kpis" aria-label="Totals"></section>
+    <div id="campuses" style="display:grid;gap:56px"></div>
+    <details class="defs">
+      <summary>How these numbers are counted</summary>
+      <p><b>Dates</b>: CRM leads, calling, visits and junk/lost count the leads <i>created</i> in the range, with everything done on them so far. Applications, enrollments and spend count what was <i>paid</i> in the range; billing counts the students whose blocking fee was paid in the range.</p>
+      <p><b>Media</b> comes live from each agency's sheet: Edelytics, EchoVME and Because. <b>Reach</b> is the agencies' daily reach added up, so over several days it counts some people more than once. EchoVME doesn't report clicks.</p>
+      <p><b>CRM leads</b>: every CRM lead with a campus (duplicates left out). <b>Channel</b>: Meta = Meta Ads, Instagram Ads, Facebook; Google = Google Ads. A lead from another source (website form, campaign form) still counts as Meta or Google when it came from a paid ad: its UTM source names the platform (google_ads, ig, fb), its campaign is one the campus runs on that platform, or the campaign name says Meta or Google. Website = the other website enquiries; Others = walk-ins, events, newspaper, referrals and the rest. Open a channel to see its campaigns and then its ads (for Others: its sources, then campaigns). Spend shows against a campaign only where the agency's sheet names the campaign (Because; Edelytics for Indirapuram).</p>
+      <p><b>Contacted</b>: at least one outgoing call. <b>Avg dials</b>: outgoing calls per lead, not counting a counsellor's outcome note logged right after an Exotel call. <b>Avg connects</b>: answered calls longer than 0 seconds, per lead. <b>Connect rate</b>: connects ÷ dials.</p>
+      <p><b>Visits scheduled / done</b>: a campus visit booked / marked done in the CRM. <b>Junk + lost</b>: lead status Junk or Lost; reasons as recorded in the CRM (<i>Invalid lead</i> covers duplicates, wrong numbers and test entries).</p>
+      <p><b>Applications received</b>: application fee paid; <b>Visit → App</b> = applications ÷ visits done. <b>Enrollments</b>: admission fee paid, or tuition/term fee paid where the admission fee was waived; <b>Visit → Enroll</b> = enrollments ÷ visits done. <b>Total billing</b>: net billing revenue for each enrolled student, the published fees less discounts (application, blocking, tuition and annual fee, plus any extras taken), the same figure as the CFO Business Dashboard; it counts on the blocking fee payment date. <b>Blended CAC</b>: spend ÷ enrollments, all channels together; <b>CAC % of billing</b>: spend ÷ billing. <b>L2P</b> (lead to purchase): enrollments ÷ CRM leads. These come from the CRM deals and their fee payments; paying students with no matching lead count under Others → <i>No CRM lead</i>. <b>Hot prospects</b>: leads whose CRM intent is marked Hot.</p>
+      <p class="fresh" id="fresh"></p>
+    </details>
+  </main>
+
+  <main class="wrap" id="wow" hidden>
+    <section class="wowhead">
+      <div><h1 id="wowTitle">Week on week</h1><p id="wowSub"></p></div>
+    </section>
+    <section class="cards" id="wowCards"></section>
+    <section class="panel"><div class="scroll"><table class="wow" id="wowTable"></table></div></section>
+    <p class="note">Weeks run Monday to Sunday; the first and last week are shown part-filled when the date range cuts them. Each change is against the week before. Leads created in the last few days have had less time to be called, visit or enroll, so their rates usually rise over the following week. Applications, enrollments and spend count what was paid in each week; billing counts the students whose blocking fee was paid in each week.</p>
+  </main>
+
+  <main class="wrap" id="summary" hidden>
+    <section class="wowhead">
+      <div><h1>Overall summary</h1><p id="sumSub"></p></div>
+    </section>
+    <section class="kpis" id="sumKpis" aria-label="Totals"></section>
+    <section class="panel"><div class="scroll"><table id="sumTable"></table></div></section>
+    <p class="note">Leads, visits scheduled and visits done count the leads created in the date range. Applications, enrollments and spend count what was paid in the range. Total billing is the net billing revenue (published fees less discounts) of the students whose blocking fee was paid in the range. Blended CAC is spend ÷ enrollments; L2P is enrollments ÷ leads.</p>
+  </main>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  function h(tag, attrs, ...kids) {
+    const e = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs || {})) {
+      if (v == null || v === false) continue;
+      if (k === "class") e.className = v;
+      else if (k === "text") e.textContent = v;
+      else if (k === "html") e.innerHTML = v;   // only ever used with the fixed icon strings below
+      else if (k.startsWith("on")) e[k] = v;
+      else e.setAttribute(k, v === true ? "" : v);
+    }
+    for (const c of kids.flat()) if (c != null && c !== false) e.append(c.nodeType ? c : document.createTextNode(c));
+    return e;
+  }
+  const ICON = {
+    cal: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="3" width="12" height="11" rx="2"/><path d="M2 6.5h12M5.5 1.5v3M10.5 1.5v3"/></svg>',
+    down: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m4 6 4 4 4-4"/></svg>',
+    right: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 3.5 4.5 4.5L6 12.5"/></svg>',
+    left: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3.5 5.5 8l4.5 4.5"/></svg>',
+    school: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="M1.5 6 8 2.5 14.5 6 8 9.5z"/><path d="M4 7.5v3.5c1 1 2.5 1.5 4 1.5s3-.5 4-1.5V7.5"/></svg>',
+  };
+
+  // ---------- sign in: each login has its own encrypted file holding only its campuses ----------
+  const SESSION = "gems-audit-session";
+  const store = {
+    get() { try { return JSON.parse(localStorage.getItem(SESSION)); } catch (e) { return null; } },
+    set(v) { try { localStorage.setItem(SESSION, JSON.stringify(v)); } catch (e) {} },
+    clear() { try { localStorage.removeItem(SESSION); } catch (e) {} },
+  };
+  const b64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+  const toB64 = (u) => btoa(String.fromCharCode(...new Uint8Array(u)));
+  const hex = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+  const uidOf = async (name) => hex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode("gems-audit:" + name.trim().toLowerCase()))).slice(0, 32);
+  let USERS = null;
+  const users = async () => (USERS ||= await (await fetch("users.json", { cache: "no-store" })).json());
+  async function derive(entry, pass) {
+    const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(pass), "PBKDF2", false, ["deriveBits"]);
+    return crypto.subtle.deriveBits({ name: "PBKDF2", salt: b64(entry.salt), iterations: entry.iter, hash: "SHA-256" }, base, 256);
+  }
+  async function unlock(entry, raw) {
+    const key = await crypto.subtle.importKey("raw", raw, "AES-GCM", false, ["decrypt"]);
+    const b = new Uint8Array(await (await fetch(entry.file, { cache: "no-store" })).arrayBuffer());
+    const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: b.slice(0, 12) }, key, b.slice(12));
+    return JSON.parse(await new Response(new Blob([plain]).stream().pipeThrough(new DecompressionStream("gzip"))).text());
+  }
+  const showGate = () => { $("#gate").hidden = false; $("#app").hidden = true; $("#user").focus(); };
+
+  $("#signin").addEventListener("submit", async (e) => {
+    e.preventDefault(); $("#err").textContent = ""; $("#go").disabled = true; $("#go").textContent = "Signing in…";
+    try {
+      const u = await uidOf($("#user").value), entry = (await users())[u];
+      if (!entry) throw new Error("no user");
+      const raw = await derive(entry, $("#pass").value);
+      const data = await unlock(entry, raw);
+      if ($("#keep").checked) store.set({ u, k: toB64(raw) });
+      $("#pass").value = "";
+      boot(data);
+    } catch (err) {
+      $("#err").textContent = "That username and password didn't match. Check them and try again.";
+    } finally { $("#go").disabled = false; $("#go").textContent = "Sign in"; }
+  });
+  $("#signout").onclick = () => { store.clear(); location.reload(); };
+  (async () => {
+    const s = store.get();
+    if (s && s.u && s.k) {
+      try { const entry = (await users())[s.u]; if (entry) { boot(await unlock(entry, b64(s.k))); return; } } catch (e) {}
+      store.clear();
+    }
+    showGate();
+  })();
+
+  // ---------- helpers ----------
+  const NAMES = {
+    "GEMS Millennium School - Gurugram": ["GMS Gurugram", "Edelytics"], "GEMS Millennium School - Indirapuram": ["GMS Indirapuram", "Edelytics"],
+    "GEMS School of Excellence - Jodhpur": ["GSE Jodhpur", "Edelytics"], "GEMS School of Excellence - Lucknow": ["GSE Lucknow", "Edelytics"],
+    "GEMS Millennium School - Varanasi": ["GMS Varanasi", "Edelytics"], "GEMS Modern Academy - Kochi": ["GMA Kochi", "Because"],
+    "GEMS Millennium School - Kochi": ["GMS Kochi", "Because"], "Little GEMS - Kochi": ["Little GEMS Kochi", "No agency"],
+    "GEMS Millennium School - Vikhroli": ["GMS Vikhroli", "EchoVME"], "GEMS Millennium School - Kalyan": ["GMS Kalyan", "EchoVME"],
+    "GEMS Modern Academy - Coimbatore": ["GMA Coimbatore", "EchoVME"], "GEMS Millennium School - Raipur": ["GMS Raipur", "EchoVME"],
+  };
+  const short = (c) => (NAMES[c] || [c])[0];
+  const agencyOf = (c) => (NAMES[c] || [, "No agency"])[1];
+  const AGENCIES = ["Edelytics", "Because", "EchoVME", "No agency"];
+  const N = ["leads", "contacted", "dials", "connects", "sched", "visited", "junk_lost", "apps", "enrols", "revenue", "billing", "appfee", "hot", "spend", "impr", "clicks", "ag_leads", "reach"];
+  const blank = () => Object.fromEntries(N.map((k) => [k, 0]));
+  const int = (n) => Math.round(n).toLocaleString("en-IN");
+  const pct = (a, b) => (b ? (100 * a / b).toFixed(1) + "%" : null);
+  const dec = (a, b) => (b ? (a / b).toFixed(2) : null);
+  const inr = (n) => "₹" + Math.round(n).toLocaleString("en-IN");
+  const lakh = (n) => (n >= 1e7 ? "₹" + (n / 1e7).toFixed(2) + " Cr" : n >= 1e5 ? "₹" + (n / 1e5).toFixed(1) + " L" : inr(n));
+  const D8 = (iso) => new Date(iso + "T00:00:00Z");
+  const iso = (d) => d.toISOString().slice(0, 10);
+  const shift = (s, n) => { const d = D8(s); d.setUTCDate(d.getUTCDate() + n); return iso(d); };
+  const fmt = (s, o) => D8(s).toLocaleDateString("en-IN", Object.assign({ day: "numeric", month: "short", timeZone: "UTC" }, o || {}));
+  const fmtY = (s) => fmt(s, { year: "numeric" });
+  const span = (a, b) => (a === b ? fmtY(a) : a.slice(0, 4) === b.slice(0, 4) ? fmt(a) + " – " + fmtY(b) : fmtY(a) + " – " + fmtY(b));
+  const daysIn = (a, b) => Math.round((D8(b) - D8(a)) / 864e5) + 1;
+
+  // ---------- popovers ----------
+  let POP = null;
+  function closePop() { if (!POP) return; POP.el.remove(); POP.anchor.setAttribute("aria-expanded", "false"); POP = null; }
+  function openPop(anchor, el) {
+    closePop(); document.body.append(el); anchor.setAttribute("aria-expanded", "true"); POP = { el, anchor };
+    const r = anchor.getBoundingClientRect(), w = el.offsetWidth, vw = document.documentElement.clientWidth;
+    el.style.top = r.bottom + 8 + "px";
+    el.style.left = Math.max(8, Math.min(r.left, vw - w - 8)) + "px";
+    if (w > vw - 16) { el.style.left = "8px"; el.style.right = "8px"; }
+    el.style.maxHeight = window.innerHeight - r.bottom - 16 + "px"; el.style.overflowY = "auto";
+  }
+  document.addEventListener("mousedown", (e) => { if (POP && !POP.el.contains(e.target) && !POP.anchor.contains(e.target)) closePop(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && POP) { const a = POP.anchor; closePop(); a.focus(); } });
+  let lastW = window.innerWidth;
+  window.addEventListener("resize", () => { if (window.innerWidth !== lastW) { lastW = window.innerWidth; closePop(); } });
+  window.addEventListener("scroll", (e) => { if (POP && !POP.el.contains(e.target)) closePop(); }, true);
+
+  // Calendar: range mode (two months, presets) or single mode (one month, a day applies at once)
+  function calendar(anchor, o) {
+    let a = o.from, b = o.to, hover = null, picking = false;
+    let view = (o.mode === "single" ? o.from : shift(o.to.slice(0, 8) + "01", -1)).slice(0, 7);   // left month, "YYYY-MM"
+    const addMonth = (ym, n) => { const d = D8(ym + "-01"); d.setUTCMonth(d.getUTCMonth() + n); return iso(d).slice(0, 7); };
+    const minM = o.min.slice(0, 7), maxM = o.max.slice(0, 7);
+    if (view < minM) view = minM;
+    const el = h("div", { class: "pop cal" + (o.mode === "single" ? " single" : ""), role: "dialog", "aria-label": o.label });
+    let days = [], presetBtns = [], sumEl = null, applyBtn = null;
+    function apply(f, t) { closePop(); o.onApply(f, t); }
+    // Hover and clicks only restyle the existing day buttons. Rebuilding them mid-click made the browser drop the end-date click.
+    function paint() {
+      const lo = picking ? (hover && hover < a ? hover : a) : a, hi = picking ? (hover && hover > a ? hover : a) : b;
+      for (const btn of days) {
+        const s = btn.dataset.d, single = o.mode === "single";
+        btn.classList.toggle("in", !single && !!lo && !!hi && s >= lo && s <= hi);
+        btn.classList.toggle("start", single ? s === a : s === lo);
+        btn.classList.toggle("end", single ? s === a : s === hi);
+      }
+      for (const [btn, f, t] of presetBtns) btn.setAttribute("aria-pressed", String(!picking && a === f && b === t));
+      if (sumEl) sumEl.textContent = picking ? "Now pick the end date" : a && b ? span(a, b) + " · " + daysIn(a, b) + " days" : "";
+      if (applyBtn) applyBtn.disabled = picking || !a || !b;
+    }
+    function render() {
+      el.textContent = ""; days = []; presetBtns = [];
+      if (o.presets) {
+        el.append(h("div", { class: "presets" }, o.presets.map(([label, f, t]) => {
+          const btn = h("button", { type: "button", onclick: () => apply(f, t) }, label); presetBtns.push([btn, f, t]); return btn;
+        })));
+      }
+      const months = o.mode === "single" ? [view] : [view, addMonth(view, 1)];
+      const body = h("div", { class: "body" });
+      const row = h("div", { class: "months" });
+      months.forEach((ym, mi) => {
+        const last = mi === months.length - 1;
+        const prev = h("button", { class: "arrow" + (mi === 0 ? "" : " ghost"), type: "button", "aria-label": "Previous month", html: ICON.left,
+          disabled: view <= minM, onclick: () => { view = addMonth(view, -1); render(); } });
+        const next = h("button", { class: "arrow" + (last ? "" : " ghost"), type: "button", "aria-label": "Next month", html: ICON.right,
+          disabled: addMonth(view, months.length - 1) >= maxM, onclick: () => { view = addMonth(view, 1); render(); } });
+        const title = D8(ym + "-01").toLocaleDateString("en-IN", { month: "long", year: "numeric", timeZone: "UTC" });
+        const grid = h("div", { class: "grid", role: "grid" }, ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map((d) => h("div", { class: "dow" }, d)));
+        const first = D8(ym + "-01"), pad = (first.getUTCDay() + 6) % 7;
+        for (let i = 0; i < pad; i++) grid.append(h("div"));
+        for (let d = first; iso(d).slice(0, 7) === ym; d = D8(shift(iso(d), 1))) {
+          const s = iso(d);
+          const btn = h("button", { class: "day" + (s === o.max ? " today" : ""), type: "button", "data-d": s, disabled: s < o.min || s > o.max, "aria-label": fmtY(s),
+            onmouseenter: () => { if (picking) { hover = s; paint(); } },
+            onclick: () => {
+              if (o.mode === "single") return apply(s, s);
+              if (!picking) { a = s; b = null; picking = true; hover = s; }
+              else { if (s < a) { b = a; a = s; } else b = s; picking = false; hover = null; }
+              paint();
+            } }, h("span", null, String(d.getUTCDate())));
+          days.push(btn); grid.append(btn);
+        }
+        row.append(h("div", { class: "month" }, h("div", { class: "mhead" }, prev, title, next), grid));
+      });
+      body.append(row);
+      if (o.mode !== "single") {
+        sumEl = h("span", { class: "sum" });
+        applyBtn = h("button", { class: "btn dark", type: "button", onclick: () => apply(a, b) }, "Apply");
+        body.append(h("div", { class: "foot" }, sumEl, h("button", { class: "btn", type: "button", onclick: closePop }, "Cancel"), applyBtn));
+      }
+      el.append(body);
+      paint();
+    }
+    render(); openPop(anchor, el);
+  }
+
+  // ---------- app ----------
+  let D, S;
+  function boot(data) {
+    D = data;
+    $("#gate").hidden = true; $("#app").hidden = false;
+    $("#whoName").textContent = data.user;
+    const today = data.today;
+    const first = [...data.leads.map((l) => l[0]), ...data.fees.map((f) => f[0]), ...data.spend.map((x) => x[0])].reduce((m, d) => (d < m ? d : m), today);
+    const leadCount = data.campuses.map(() => 0); for (const l of data.leads) leadCount[l[1]]++;
+    const order = data.campuses.map((c, i) => i).sort((x, y) => AGENCIES.indexOf(agencyOf(data.campuses[x])) - AGENCIES.indexOf(agencyOf(data.campuses[y])) || leadCount[y] - leadCount[x]);
+    S = { tab: "funnel", first, today, from: first, to: today, picked: new Set(), order, open: new Set(), wowCh: -1 };
+    $$(".tab").forEach((t) => (t.onclick = () => { S.tab = t.dataset.tab; draw(); window.scrollTo({ top: 0 }); }));
+    const up = data.spend_upto || {};
+    $("#fresh").textContent = "CRM data (leads, calls, visits, admissions and fees) as of " + data.taken + ". " +
+      Object.entries(up).map(([a, d]) => a + " spend to " + fmt(d)).join(", ") + ".";
+    draw();
+  }
+
+  const sel = () => S.order.filter((ci) => S.picked.size === 0 || S.picked.has(ci));
+  const agencies = () => AGENCIES.filter((a) => S.order.some((ci) => agencyOf(D.campuses[ci]) === a));
+  const ofAgency = (a) => S.order.filter((ci) => agencyOf(D.campuses[ci]) === a);
+
+  function draw() {
+    closePop();
+    $$(".tab").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === S.tab)));
+    $("#funnel").hidden = S.tab !== "funnel"; $("#wow").hidden = S.tab !== "wow"; $("#summary").hidden = S.tab !== "summary";
+    drawBar();
+    S.tab === "funnel" ? drawFunnel() : S.tab === "wow" ? drawWow() : drawSummary();
+  }
+
+  // ---------- filter bar ----------
+  function drawBar() {
+    const bar = $("#bar"); bar.textContent = "";
+    {
+      const m0 = S.today.slice(0, 8) + "01", lmEnd = shift(m0, -1), lm0 = lmEnd.slice(0, 8) + "01";
+      const presets = [["Season to date", S.first, S.today], ["Today", S.today, S.today], ["Yesterday", shift(S.today, -1), shift(S.today, -1)],
+        ["Last 7 days", shift(S.today, -6), S.today], ["Last 14 days", shift(S.today, -13), S.today], ["Last 30 days", shift(S.today, -29), S.today],
+        ["This month", m0, S.today], ["Last month", lm0 < S.first ? S.first : lm0, lmEnd]].filter(([, f, t]) => t >= S.first);
+      const pre = presets.find(([, f, t]) => f === S.from && t === S.to);
+      const btn = h("button", { class: "ctl", type: "button", "aria-haspopup": "dialog", "aria-expanded": "false" },
+        h("span", { html: ICON.cal }), pre ? h("span", null, pre[0], h("span", { class: "cap" }, " · " + span(S.from, S.to))) : span(S.from, S.to), h("span", { html: ICON.down }));
+      btn.onclick = () => POP && POP.anchor === btn ? closePop() : calendar(btn, { mode: "range", label: "Date range", min: S.first, max: S.today, from: S.from, to: S.to, presets,
+        onApply: (f, t) => { S.from = f; S.to = t; draw(); } });
+      bar.append(btn);
+    }
+    const ags = agencies();
+    if (ags.length > 1) {
+      bar.append(h("span", { class: "sep" }));
+      const seg = h("div", { class: "seg", role: "group", "aria-label": "Agency" });
+      seg.append(h("button", { type: "button", "aria-pressed": String(S.picked.size === 0), onclick: () => { S.picked.clear(); draw(); } }, "All"));
+      for (const a of ags.filter((x) => x !== "No agency")) {
+        const mine = ofAgency(a), on = S.picked.size === mine.length && mine.every((ci) => S.picked.has(ci));
+        seg.append(h("button", { type: "button", "aria-pressed": String(on), onclick: () => { S.picked = new Set(mine); draw(); } }, a));
+      }
+      bar.append(seg);
+    }
+    if (S.order.length > 1) {
+      const n = S.picked.size, label = n === 0 ? "All campuses" : n === 1 ? short(D.campuses[[...S.picked][0]]) : n + " campuses";
+      const cb = h("button", { class: "ctl", type: "button", "aria-haspopup": "dialog", "aria-expanded": "false" }, h("span", { html: ICON.school }), label, h("span", { html: ICON.down }));
+      cb.onclick = () => POP && POP.anchor === cb ? closePop() : campusPicker(cb);
+      bar.append(cb);
+    }
+    if (S.tab === "wow") {
+      bar.append(h("span", { class: "sep" }));
+      const seg = h("div", { class: "seg", role: "group", "aria-label": "Channel" });
+      [["All channels", -1], ...D.channels.map((c, i) => [c, i])].forEach(([l, i]) =>
+        seg.append(h("button", { type: "button", "aria-pressed": String(S.wowCh === i), onclick: () => { S.wowCh = i; draw(); } }, l)));
+      bar.append(seg);
+    }
+  }
+
+  function campusPicker(anchor) {
+    const temp = new Set(S.picked.size ? S.picked : S.order);
+    const el = h("div", { class: "pop picker", role: "dialog", "aria-label": "Campuses" });
+    const counts = D.campuses.map(() => 0); for (const l of D.leads) counts[l[1]]++;
+    function render() {
+      el.textContent = "";
+      el.append(h("div", { class: "ph" }, "Campuses", h("button", { class: "link", type: "button", onclick: () => { (temp.size === S.order.length ? temp.clear() : S.order.forEach((ci) => temp.add(ci))); render(); } },
+        temp.size === S.order.length ? "Clear all" : "Select all")));
+      const list = h("div", { class: "list" });
+      const ags = agencies();
+      for (const a of ags) {
+        const mine = ofAgency(a);
+        if (ags.length > 1) list.append(h("div", { class: "grp" }, a === "No agency" ? "No agency" : a,
+          h("button", { type: "button", onclick: () => { temp.clear(); mine.forEach((ci) => temp.add(ci)); render(); } }, "Only these")));
+        for (const ci of mine) {
+          const cbx = h("input", { type: "checkbox" }); cbx.checked = temp.has(ci);
+          cbx.onchange = () => { cbx.checked ? temp.add(ci) : temp.delete(ci); render(); };
+          list.append(h("label", null, cbx, short(D.campuses[ci]), h("span", { class: "n" }, int(counts[ci]) + " leads")));
+        }
+      }
+      el.append(list);
+      el.append(h("div", { class: "pf" }, h("button", { class: "btn", type: "button", onclick: closePop }, "Cancel"),
+        h("button", { class: "btn dark", type: "button", disabled: temp.size === 0, onclick: () => {
+          S.picked = temp.size === S.order.length ? new Set() : new Set(temp); closePop(); draw(); } }, "Show " + (temp.size === S.order.length ? "all" : temp.size))));
+    }
+    render(); openPop(anchor, el);
+  }
+
+  // ---------- aggregation ----------
+  // keyOf(campus, channel, source, campaign, ad, isSpend) -> a key or null. Spend rows only know campaign (Because, Edelytics Indirapuram), never source or ad (-1).
+  function collect(from, to, keyOf) {
+    const m = new Map(), at = (k) => { let t = m.get(k); if (!t) m.set(k, (t = blank())); return t; };
+    const inR = (d) => d && d >= from && d <= to;
+    for (const l of D.leads) {
+      if (!inR(l[0])) continue;
+      const k = keyOf(l[1], l[2], l[10], l[11], l[12]); if (k == null) continue;
+      const t = at(k); t.leads++; t.contacted += l[3]; t.dials += l[4]; t.connects += l[5]; t.sched += l[6]; t.visited += l[7]; t.junk_lost += l[8]; t.hot += l[l.length - 1];
+    }
+    for (const s of D.students) {
+      const k = keyOf(s[0], s[1], s[4], s[5], s[6]); if (k == null) continue;
+      if (inR(s[2])) at(k).apps++;
+      if (inR(s[3])) at(k).enrols++;
+    }
+    for (const f of D.fees) { if (!inR(f[0])) continue; const k = keyOf(f[1], f[2], f[4], f[5], f[6]); if (k != null) at(k).revenue += f[3]; }
+    for (const b of D.billing || []) { if (!inR(b[0])) continue; const k = keyOf(b[1], b[2], b[4], b[5], b[6]); if (k != null) at(k).billing += b[3]; }
+    for (const f of D.appfees || []) { if (!inR(f[0])) continue; const k = keyOf(f[1], f[2], f[4], f[5], f[6]); if (k != null) at(k).appfee += f[3]; }
+    for (const x of D.spend) {
+      if (!inR(x[0])) continue;
+      const k = keyOf(x[1], x[2], -1, x[8], -1, true); if (k == null) continue;
+      const t = at(k); t.spend += x[3]; t.impr += x[4]; t.clicks += x[5]; t.ag_leads += x[6]; t.reach += x[7];
+    }
+    return m;
+  }
+  const total = (list) => list.reduce((t, x) => { for (const k of N) t[k] += x[k] || 0; return t; }, blank());
+
+  // Funnel columns, top to bottom
+  const COLS = [
+    ["Media", "Spend", (t) => (t.spend ? inr(t.spend) : null)],
+    ["Media", "Impressions", (t) => (t.impr ? int(t.impr) : null)],
+    ["Media", "Reach", (t) => (t.reach ? int(t.reach) : null)],
+    ["Media", "Clicks", (t) => (t.clicks ? int(t.clicks) : null)],
+    ["Media", "CTR", (t) => (t.clicks && t.impr ? (100 * t.clicks / t.impr).toFixed(2) + "%" : null)],
+    ["Media", "CPC", (t) => (t.spend && t.clicks ? "₹" + (t.spend / t.clicks).toFixed(1) : null)],
+    ["Leads & calling", "Leads", (t) => int(t.leads)],
+    ["Leads & calling", "CPL", (t) => (t.spend && t.leads ? inr(t.spend / t.leads) : null)],
+    ["Leads & calling", "Contacted", (t) => (t.leads ? [int(t.contacted), pct(t.contacted, t.leads)] : null)],
+    ["Leads & calling", "Avg dials", (t) => dec(t.dials, t.leads)],
+    ["Leads & calling", "Avg connects", (t) => dec(t.connects, t.leads)],
+    ["Leads & calling", "Connect rate", (t) => pct(t.connects, t.dials)],
+    ["Leads & calling", "Hot prospects", (t) => (t.leads ? [int(t.hot), pct(t.hot, t.leads)] : null)],
+    ["Leads & calling", "Junk + lost", (t) => (t.leads ? [int(t.junk_lost), pct(t.junk_lost, t.leads)] : null)],
+    ["Visits", "Scheduled", (t) => int(t.sched)],
+    ["Visits", "Lead → Sch", (t) => pct(t.sched, t.leads)],
+    ["Visits", "Done", (t) => int(t.visited)],
+    ["Visits", "Sch → Visit", (t) => pct(t.visited, t.sched)],
+    ["Visits", "Lead → Visit", (t) => pct(t.visited, t.leads)],
+    ["Conversion", "Applications received", (t) => int(t.apps)],
+    ["Conversion", "Visit → App", (t) => pct(t.apps, t.visited)],
+    ["Conversion", "Enrollments", (t) => int(t.enrols)],
+    ["Conversion", "Visit → Enroll", (t) => pct(t.enrols, t.visited)],
+    ["Money", "Total billing", (t) => (t.billing ? inr(t.billing) : null)],
+    ["Money", "Blended CAC", (t) => (t.spend && t.enrols ? inr(t.spend / t.enrols) : null)],
+    ["Money", "CAC % of billing", (t) => (t.spend && t.billing ? pct(t.spend, t.billing) : null)],
+    ["Money", "L2P", (t) => pct(t.enrols, t.leads)],
+  ];
+  const groupStart = COLS.map((c, i) => i === 0 || COLS[i - 1][0] !== c[0]);
+
+  function funnelHead(firstLabel) {
+    const g = h("tr", { class: "groups" }, h("th", { class: "first", rowspan: "2", style: "vertical-align:bottom" }, firstLabel));
+    COLS.forEach((c, i) => { if (groupStart[i]) g.append(h("th", { class: "g0", colspan: String(COLS.filter((x) => x[0] === c[0]).length) }, c[0])); });
+    const r = h("tr", { class: "cols" }, COLS.map((c, i) => h("th", { class: groupStart[i] ? "g0" : null }, c[1])));
+    return h("thead", null, g, r);
+  }
+  function funnelRow(label, t, cls, exp) {
+    const tr = h("tr", { class: cls });
+    tr.append(h("td", { class: "first", title: label }, exp || "", label));
+    COLS.forEach((c, i) => {
+      const v = c[2](t), td = h("td", { class: (groupStart[i] ? "g0" : "") + (v == null ? " na" : "") });
+      if (v == null) td.textContent = "–";
+      else if (Array.isArray(v)) td.append(v[0], h("span", { class: "p" }, v[1]));
+      else td.textContent = v;
+      tr.append(td);
+    });
+    return tr;
+  }
+  const expander = (key, label, has) => {
+    if (!has) return h("button", { class: "exp none", type: "button", tabindex: "-1", "aria-hidden": "true", html: ICON.right });
+    return h("button", { class: "exp", type: "button", "aria-expanded": String(S.open.has(key)), "aria-label": (S.open.has(key) ? "Collapse " : "Expand ") + label, html: ICON.right,
+      onclick: () => { S.open.has(key) ? S.open.delete(key) : S.open.add(key); drawFunnel(); } });
+  };
+
+  // ---------- funnel view ----------
+  function drawFunnel() {
+    const campuses = sel(), set = new Set(campuses);
+    const OTHERS = D.channels.indexOf("Others"), L = D.labels;
+    const grid = collect(S.from, S.to, (ci, ch) => (set.has(ci) ? ci + "|" + ch : null));
+    const cell = (ci, ch) => grid.get(ci + "|" + ch) || blank();
+    const byCampus = (ci) => total(D.channels.map((_, ch) => cell(ci, ch)));
+    const all = total(campuses.map(byCampus));
+
+    const k = $("#kpis"); k.textContent = "";
+    [["Spend", all.spend ? lakh(all.spend) : "–", "Agency Spends"],
+     ["Leads", int(all.leads), all.spend && all.leads ? inr(all.spend / all.leads) + " cost per lead" : span(S.from, S.to)],
+     ["Visits done", int(all.visited), (pct(all.visited, all.leads) || "–") + " of leads"],
+     ["Applications received", int(all.apps), (pct(all.apps, all.visited) || "–") + " of visits done"],
+     ["Enrollments", int(all.enrols), (pct(all.enrols, all.visited) || "–") + " of visits done"],
+     ["Total billing", all.billing ? lakh(all.billing) : "–", "Net Billing Revenue"],
+     ["Blended CAC", all.spend && all.enrols ? inr(all.spend / all.enrols) : "–", all.spend && all.billing ? pct(all.spend, all.billing) + " of billing" : "spend per enrollment"],
+     ["L2P", pct(all.enrols, all.leads) || "–", "lead → enrollment"],
+    ].forEach(([a, b, c]) => k.append(h("div", { class: "kpi" }, h("div", { class: "k" }, a), h("div", { class: "v" }, b), h("div", { class: "s" }, c))));
+
+    const wrap = $("#campuses"); wrap.textContent = "";
+    for (const ci of campuses) {
+      const c = D.campuses[ci], tot = byCampus(ci), ag = agencyOf(c);
+      const sec = h("section", { class: "campus", id: "campus-" + short(c).replace(/\W+/g, "-").toLowerCase() });
+      sec.append(h("div", { class: "chead" }, h("h2", null, short(c)), h("span", { class: "ag" }, ag === "No agency" ? "No agency" : "Agency · " + ag),
+        h("button", { class: "dl", type: "button", title: "Everything held on each lead for " + span(S.from, S.to) + ": contact details, campaign, calling, visits, fees, what the parent said on calls", onclick: () => downloadLeads(ci) }, "↓ Leads CSV"),
+        h("span", { class: "meta" }, int(tot.leads) + " leads · " + int(tot.enrols) + " enrollments · " + span(S.from, S.to))));
+
+      const tbody = h("tbody");
+      D.channels.forEach((chName, ch) => {
+        const t = cell(ci, ch), key = ci + "|" + ch, has = t.leads + t.apps + t.enrols + t.revenue + t.billing + t.spend > 0;
+        tbody.append(funnelRow(chName, t, "lvl0", expander(key, chName, has)));
+        if (!has || !S.open.has(key)) return;
+        // Level 1: campaigns (for Others: sources). Level 2: ads (for Others: campaigns).
+        const d1 = (src, camp) => (ch === OTHERS ? src : camp), d2 = (camp, ad) => (ch === OTHERS ? camp : ad);
+        const lv1 = collect(S.from, S.to, (c2, h2, src, camp) => (c2 === ci && h2 === ch && d1(src, camp) >= 0 ? d1(src, camp) : null));
+        const rank = (m) => [...m.entries()].sort((x, y) => y[1].leads - x[1].leads || y[1].enrols - x[1].enrols || y[1].spend - x[1].spend);
+        for (const [v1, t1] of rank(lv1)) {
+          const k1 = key + "|" + v1, has2 = t1.leads + t1.apps + t1.revenue + t1.billing > 0;
+          tbody.append(funnelRow(L[v1], t1, "lvl1", expander(k1, L[v1], has2)));
+          if (!has2 || !S.open.has(k1)) continue;
+          const lv2 = collect(S.from, S.to, (c2, h2, src, camp, ad, sp) => (!sp && c2 === ci && h2 === ch && d1(src, camp) === v1 ? d2(camp, ad) : null));
+          for (const [v2, t2] of rank(lv2)) tbody.append(funnelRow(L[v2], t2, "lvl2"));
+        }
+      });
+      tbody.append(funnelRow("All channels", tot, "total"));
+      sec.append(h("div", { class: "panel" }, h("div", { class: "scroll" }, h("table", null, funnelHead("Channel"), tbody))));
+      sec.append(h("p", { class: "hint" }, "Open a channel to see its " + "campaigns and ads; Others opens into sources."));
+      sec.append(insights(ci));
+      wrap.append(sec);
+    }
+    if (!campuses.length) wrap.append(h("p", { class: "empty" }, "Pick at least one campus."));
+  }
+
+  // Lead-level CSV for one campus and the current date range (phone and email included)
+  function downloadLeads(ci) {
+    const cols = ["Lead ID", "Created", "Campus", "Channel", "Source", "Campaign", "Ad", "Grade", "CRM status", "Phone", "Email", "Contacted", "Dials", "Connects",
+      "Visit scheduled", "Visit done", "Junk or lost", "Reason", "Applied", "Enrolled", ...(D.lead_cols || [])];
+    const yn = (v) => (v ? "Yes" : "No"), nz = (i) => (i >= 0 && D.labels[i] !== "(not set)" ? D.labels[i] : "");
+    const rows = D.leads.filter((l) => l[1] === ci && inRange(l[0])).sort((a, b) => (a[0] < b[0] ? 1 : -1)).map((l) => [l[16], l[0], short(D.campuses[ci]), D.channels[l[2]],
+      nz(l[10]), nz(l[11]), nz(l[12]), nz(l[13]), l[19], l[17], l[18], yn(l[3]), l[4], l[5], yn(l[6]), yn(l[7]), yn(l[8]), l[9] >= 0 ? D.reasons[l[9]] : "", yn(l[14]), yn(l[15]), ...l.slice(20, -1)]);
+    const cell = (v) => { let t = String(v == null ? "" : v); if (/^[=+\-@\t\r]/.test(t)) t = "'" + t; return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+    const csv = "\ufeff" + [cols, ...rows].map((r) => r.map(cell).join(",")).join("\r\n");
+    const a = h("a", { href: URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" })), download: "leads-" + short(D.campuses[ci]).replace(/\W+/g, "-").toLowerCase() + "-" + S.from + "-to-" + S.to + ".csv" });
+    document.body.append(a); a.click(); a.remove();
+  }
+
+  // ---------- three insight panels under each campus ----------
+  const CH_COL = ["#041E42", "#00A3E0", "#7FCFEF", "#C7C7CC"];
+  const GRADES = ["Pre-Kindergarten", "Nursery", "Junior KG", "Senior KG", ...Array.from({ length: 12 }, (_, i) => "Grade " + (i + 1))];
+  const GSHORT = (g) => ({ "Pre-Kindergarten": "Pre-K", Nursery: "Nur", "Junior KG": "JKG", "Senior KG": "SKG" }[g] || g.replace("Grade ", "G"));
+  const TOPIC = { fees: "Fees", transport: "Transport", location: "Location", curriculum: "Curriculum", grade_age: "Grade & age", school_status: "New campus status",
+    timings: "Timings & daycare", facilities: "Facilities", activities: "Activities & sports", teachers_safety: "Teachers & safety", reputation: "GEMS reputation",
+    admission_process: "Admission process", comparing: "Comparing schools", other: "Other" };
+  const tName = (i) => TOPIC[D.topics[i]] || D.topics[i];
+  const sum = (a) => a.reduce((x, y) => x + y, 0);
+  const inRange = (d) => d >= S.from && d <= S.to;
+  const legend = (items) => h("div", { class: "lg" }, items.map(([label, col]) => h("span", null, h("i", { style: "background:" + col }), label)));
+  const BANDS = [["Early years", ["Pre-Kindergarten", "Nursery", "Junior KG", "Senior KG"]], ["Grades 1–5", ["Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5"]],
+    ["Grades 6–8", ["Grade 6", "Grade 7", "Grade 8"]], ["Grades 9–12", ["Grade 9", "Grade 10", "Grade 11", "Grade 12"]]];
+  const PROF = [{ budget: "budget school", mid: "mid-fee school", premium: "premium school", international: "international school", none: "first admission" },
+    {}, { walkable: "under 2 km", near: "2–5 km", mid: "5–10 km", far: "10+ km", relocating: "relocating" }, { this_session: "this year", next_session: "next year", later: "later" }];
+  const KEEN = [["Hot", "#1A7F37"], ["Warm", "#00A3E0"], ["Cold", "#C4302B"], ["Unclear", "#D2D2D7"]];
+
+  function insights(ci) { return h("div", { class: "trio" }, reasonsCard(ci), gradesCard(ci), voiceCard(ci)); }
+
+  // Junk/lost reasons by channel, clubbed into short labels (count; share of the channel's junk/lost on hover)
+  function reasonsCard(ci) {
+    const m = {}, colTot = D.channels.map(() => 0);
+    for (const l of D.leads) {
+      if (l[1] !== ci || !l[8] || !inRange(l[0])) continue;
+      const r = l[9] >= 0 ? D.reasons[l[9]] : "No reason given";
+      (m[r] ||= D.channels.map(() => 0))[l[2]]++; colTot[l[2]]++;
+    }
+    const n = sum(colTot);
+    const card = h("section", { class: "card" }, h("h3", null, "What leads are saying", h("span", null, n ? int(n) + " junk or lost" : "")));
+    if (!n) { card.append(h("p", { class: "empty" }, "No leads marked junk or lost in this range.")); return card; }
+    let rows = Object.entries(m).sort((a, b) => sum(b[1]) - sum(a[1]));
+    if (rows.length > 7) rows = [...rows.slice(0, 6), ["Other reasons", rows.slice(6).reduce((acc, [, v]) => acc.map((x, i) => x + v[i]), D.channels.map(() => 0))]];
+    const chs = D.channels.map((_, i) => i).filter((i) => colTot[i] > 0);
+    card.append(h("table", { class: "mini" },
+      h("thead", null, h("tr", null, h("th", null, "Reason"), chs.map((i) => h("th", { style: "text-align:center" }, D.channels[i])))),
+      h("tbody", null, rows.map(([r, v]) => h("tr", null, h("td", null, r), chs.map((i) => {
+        const share = v[i] / colTot[i];
+        return v[i] ? h("td", { class: "hc", title: pct(v[i], colTot[i]) + " of " + D.channels[i] + "'s junk/lost", style: "background:rgba(0,163,224," + (0.07 + share * 0.5).toFixed(3) + ")" }, int(v[i])) : h("td", { class: "hc z" }, "–");
+      }))))));
+    return card;
+  }
+
+  // Grades asked for: one column per grade, stacked by channel
+  function gradesCard(ci) {
+    const g = {}; let n = 0;
+    for (const l of D.leads) { if (l[1] !== ci || !inRange(l[0])) continue; (g[D.labels[l[13]]] ||= D.channels.map(() => 0))[l[2]]++; n++; }
+    const known = GRADES.filter((x) => g[x]), card = h("section", { class: "card" }, h("h3", null, "Grades parents ask for", h("span", null, n ? int(n) + " leads" : "")));
+    if (!known.length) { card.append(h("p", { class: "empty" }, "No leads with a grade in this range.")); return card; }
+    const max = Math.max(...known.map((x) => sum(g[x]))), tot = sum(known.map((x) => sum(g[x])));
+    const chs = D.channels.map((_, i) => i).filter((i) => known.some((x) => g[x][i]));
+    const first = GRADES.indexOf(known[0]), last = GRADES.indexOf(known[known.length - 1]);
+    card.append(h("div", { class: "gcols" }, GRADES.slice(first, last + 1).map((x) => {
+      const v = g[x] || D.channels.map(() => 0), t = sum(v);
+      return h("div", { class: "gc", title: x + ": " + t + " leads" + (t ? " (" + chs.filter((i) => v[i]).map((i) => D.channels[i] + " " + v[i]).join(", ") + ")" : "") },
+        h("b", null, t || ""), h("div", { class: "gb" }, chs.map((i) => (v[i] ? h("i", { style: "height:" + (100 * v[i]) / max + "%;background:" + CH_COL[i] }) : null))), h("span", null, GSHORT(x)));
+    })));
+    const top = [...known].sort((a, b) => sum(g[b]) - sum(g[a])).slice(0, 3);
+    const unset = g["(not set)"] ? sum(g["(not set)"]) : 0;
+    card.append(h("div", { class: "top3" }, "Most asked: " + top.map((x) => x + " " + pct(sum(g[x]), tot)).join(" · ") + (unset ? " · " + unset + " with no grade" : "")));
+    card.append(legend(chs.map((i) => [D.channels[i], CH_COL[i]])));
+    return card;
+  }
+
+  // Parents' voice: what parents raised on audited calls (from the call audit), by channel
+  // voice: [day, campus, channel, intent 0 hot / 1 warm / 2 cold / 3 unclear, visit booked, [[topic, 0 concern / 1 interest]] or null, grade, text or null]
+  const voiceOf = (ci) => (D.voice || []).filter((v) => v[1] === ci && inRange(v[0]));
+  function topicCounts(list) {   // per topic: [concern mentions, interest mentions, calls that raised it]
+    const t = D.topics.map(() => [0, 0, 0]);
+    for (const v of list) { const seen = new Set(); for (const [k, kind] of v[5] || []) { t[k][kind]++; if (!seen.has(k)) { seen.add(k); t[k][2]++; } } }
+    return t;
+  }
+  const rankTopics = (t) => t.map((x, i) => i).filter((i) => t[i][2]).sort((a, b) => t[b][2] - t[a][2]);
+  function topicBars(t, n, limit) {
+    const order = rankTopics(t).slice(0, limit), max = order.length ? t[order[0]][2] : 1;
+    return order.map((i) => { const [c, it, k] = t[i], w = (100 * k) / max;
+      return h("div", { class: "vrow", title: tName(i) + ": raised on " + k + " of " + n + " calls (" + c + " concerns, " + it + " interest)" }, h("span", null, tName(i)),
+        h("div", { class: "tr" }, h("i", { style: "width:" + (w * c) / (c + it) + "%;background:var(--bad)" }), h("i", { style: "width:" + (w * it) / (c + it) + "%;background:var(--cyan)" })), h("span", { class: "n" }, pct(k, n))); });
+  }
+  function voiceCard(ci) {
+    const all = voiceOf(ci), tagged = all.filter((v) => v[5]);
+    const open = () => openVoice(ci);
+    const card = h("section", { class: "card voice", role: "button", tabindex: "0", "aria-label": "Open parents' voice", onclick: open,
+      onkeydown: (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } } },
+      h("h3", null, "Parents' voice", h("span", null, tagged.length ? int(tagged.length) + " calls analysed" : "")));
+    if (!tagged.length) { card.append(h("p", { class: "empty" }, all.length ? int(all.length) + " audited calls in this range; what parents raised is added to them each night." : "No audited calls with these leads in this range yet.")); return card; }
+    card.append(h("div", { style: "display:grid;gap:8px" }, topicBars(topicCounts(tagged), tagged.length, 6)));
+    card.append(legend([["Concern", "var(--bad)"], ["Interest", "var(--cyan)"]]));
+    card.append(h("button", { class: "more", type: "button", onclick: (e) => { e.stopPropagation(); open(); } }, "Open parents' voice by channel →"));
+    return card;
+  }
+
+  function openVoice(ci) {
+    closePop();
+    const st = { ch: -1, topic: -1 };
+    const bg = h("div", { class: "modal-bg" }), modal = h("div", { class: "modal", role: "dialog", "aria-modal": "true", "aria-label": "Parents' voice" });
+    const close = () => { bg.remove(); document.removeEventListener("keydown", esc); document.body.style.overflow = ""; };
+    const esc = (e) => { if (e.key === "Escape") close(); };
+    bg.onclick = (e) => { if (e.target === bg) close(); };
+    document.addEventListener("keydown", esc); document.body.style.overflow = "hidden";
+    bg.append(modal); document.body.append(bg);
+    const name = short(D.campuses[ci]);
+    function persona(ch, vs) {
+      const gr = {}; for (const l of D.leads) if (l[1] === ci && l[2] === ch && inRange(l[0]) && GRADES.includes(D.labels[l[13]])) gr[D.labels[l[13]]] = (gr[D.labels[l[13]]] || 0) + 1;
+      const gt = sum(Object.values(gr)), topG = Object.entries(gr).sort((a, b) => b[1] - a[1]).slice(0, 3);
+      const t = topicCounts(vs), byKind = (k) => t.map((x, i) => i).filter((i) => t[i][k]).sort((a, b) => t[b][k] - t[a][k]).slice(0, 3).map(tName).join(", ") || "–";
+      const keen = [0, 0, 0, 0]; vs.forEach((v) => keen[v[3]]++);
+      const booked = sum(vs.map((v) => v[4]));
+      const ai = (D.personas || []).find((x) => x[0] === ci && x[1] === ch);
+      const withP = vs.filter((v) => v[8]), prof = (i) => { const c = {}; withP.forEach((v) => { const x = v[8][i]; if (x && x !== "unknown") c[x] = (c[x] || 0) + 1; });
+        return Object.entries(c).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([k, m]) => (PROF[i][k] || k) + " " + pct(m, withP.length)).join(", "); };
+      const ld = D.leads.filter((l) => l[1] === ci && l[2] === ch && inRange(l[0])), lv = sum(ld.map((l) => l[7])), le = sum(ld.map((l) => l[15] || 0));
+      const facts = [["Now at", prof(0)], ["Deciding", prof(1)], ["Lives", prof(2)], ["Joining", prof(3)]].filter(([, v]) => v);
+      return h("div", { class: "pcard" }, h("div", { class: "ch" }, h("span", { style: "width:10px;height:10px;border-radius:3px;display:inline-block;background:" + CH_COL[ch] }), D.channels[ch], h("span", null, int(vs.length) + " calls · " + int(gt) + " leads")),
+        h("dl", null,
+          h("dt", null, "Grades"), h("dd", null, topG.length ? topG.map(([x, k]) => GSHORT(x) === x ? x : x + " " + pct(k, gt)).join(", ") : "–"),
+          h("dt", null, "Worried about"), h("dd", null, byKind(0)),
+          h("dt", null, "Looking for"), h("dd", null, byKind(1)),
+          h("dt", null, "Keenness"), h("dd", null, vs.length ? pct(keen[0] + keen[1], vs.length) + " hot or warm" : "–", vs.length ? h("div", { class: "keen" }, keen.map((k, i) => (k ? h("i", { style: "flex:" + k + ";background:" + KEEN[i][1], title: KEEN[i][0] + ": " + k }) : null))) : null),
+          h("dt", null, "Visit booked"), h("dd", null, vs.length ? pct(booked, vs.length) + " of these calls" : "–"),
+          ...facts.flatMap(([k, v]) => [h("dt", null, k), h("dd", null, v)]),
+          h("dt", null, "Converts"), h("dd", null, ld.length ? pct(lv, ld.length) + " visited · " + int(le) + " enrolled (" + pct(le, ld.length) + ")" : "–")),
+        ai ? h("div", { class: "ai" }, h("p", null, ai[2]), h("p", { class: "tip" }, h("b", null, "For the agency: "), ai[3]), h("span", { class: "by" }, "Written by Claude from " + ai[4] + " calls · " + fmt(ai[5]))) : null);
+    }
+    // Which parents convert: grade band x channel from CRM leads, and topic raised from analysed calls
+    function converts(cols, list) {
+      const rows = [];
+      for (const ch of cols) for (const [band, gs] of BANDS) {
+        const ld = D.leads.filter((l) => l[1] === ci && l[2] === ch && inRange(l[0]) && gs.includes(D.labels[l[13]]));
+        if (ld.length >= 5) rows.push([D.channels[ch] + " · " + band, ld.length, sum(ld.map((l) => l[7])), sum(ld.map((l) => l[14] || 0)), sum(ld.map((l) => l[15] || 0))]);
+      }
+      rows.sort((a, b) => b[4] / b[1] - a[4] / a[1] || b[2] / b[1] - a[2] / a[1]);
+      const best = rows.length && rows[0][4] ? rows[0][0] : null;
+      const tbl = (head, rs) => h("table", { class: "mini" }, h("thead", null, h("tr", null, head.map((x, i) => h("th", { style: i ? "text-align:right" : null }, x)))),
+        h("tbody", null, rs.map((r) => h("tr", { class: r[0] === best ? "best" : null }, r.map((x, i) => h("td", { style: i ? "text-align:right" : null }, x))))));
+      const t = topicCounts(list), byT = rankTopics(t).map((k) => { const vs = list.filter((v) => (v[5] || []).some(([x]) => x === k) && v[9]);
+        return [tName(k), vs.length, pct(sum(vs.map((v) => v[9][0])), vs.length) || "–", pct(sum(vs.map((v) => v[9][2])), vs.length) || "–"]; }).filter((r) => r[1] >= 3);
+      return h("section", null, h("h4", null, "Which parents convert", h("span", null, "CRM leads created in this range · enrolments to date")),
+        h("div", { class: "two-col" },
+          h("div", null, rows.length ? tbl(["Channel · grades", "Leads", "Visited", "Applied", "Enrolled", "Lead → enrol"], rows.map((r) => [r[0], int(r[1]), pct(r[2], r[1]), int(r[3]), int(r[4]), pct(r[4], r[1])])) : h("p", { class: "empty" }, "Not enough leads per group yet (5+ needed).")),
+          h("div", null, byT.length ? tbl(["Parents who raised…", "Calls", "Lead visited", "Lead enrolled"], byT) : h("p", { class: "empty" }, "Not enough analysed calls per topic yet (3+ needed)."))));
+    }
+    function render() {
+      const all = voiceOf(ci).filter((v) => v[5]), chs = D.channels.map((_, i) => i).filter((i) => all.some((v) => v[2] === i));
+      const list = all.filter((v) => st.ch < 0 || v[2] === st.ch);
+      const seg = h("div", { class: "seg", role: "group", "aria-label": "Channel" }, [["All channels", -1], ...chs.map((i) => [D.channels[i], i])].map(([l, i]) =>
+        h("button", { type: "button", "aria-pressed": String(st.ch === i), onclick: () => { st.ch = i; render(); } }, l)));
+      const head = h("div", { class: "mhd" }, h("div", { class: "row1" }, h("div", null, h("h2", null, "Parents' voice · " + name),
+        h("p", null, int(all.length) + " audited calls with this campus's leads · " + span(S.from, S.to) + " · topics tagged by Claude from the call transcripts")),
+        h("button", { class: "x", type: "button", "aria-label": "Close", onclick: close }, "×")), chs.length > 1 ? seg : null);
+      const body = h("div", { class: "mbd" });
+      if (!all.length) body.append(h("p", { class: "empty" }, "No analysed calls for this campus in this range yet."));
+      else {
+        body.append(h("section", null, h("h4", null, "Who's calling", h("span", null, "parent persona by channel")), h("div", { class: "personas" }, (st.ch < 0 ? chs : [st.ch]).map((ch) => persona(ch, all.filter((v) => v[2] === ch))))));
+        const t = topicCounts(list), order = rankTopics(t);
+        const cols = st.ch < 0 ? chs : [st.ch], per = cols.map((ch) => all.filter((v) => v[2] === ch)), pt = per.map(topicCounts);
+        body.append(h("section", null, h("h4", null, "What they raise", h("span", null, "share of each channel's calls · tap a topic to read the calls")),
+          h("table", { class: "mini" }, h("thead", null, h("tr", null, h("th", null, "Topic"), cols.map((ch, j) => h("th", { style: "text-align:center" }, D.channels[ch] + " (" + per[j].length + ")")), h("th", { style: "text-align:center" }, "Mostly"))),
+            h("tbody", null, order.map((k) => h("tr", { style: "cursor:pointer", onclick: () => { st.topic = st.topic === k ? -1 : k; render(); } },
+              h("td", null, h("b", { style: "font-weight:" + (st.topic === k ? 600 : 400) }, tName(k))),
+              cols.map((ch, j) => { const c = pt[j][k][2], n = per[j].length, sh = n ? c / n : 0;
+                return c ? h("td", { class: "hc", style: "background:rgba(0,163,224," + (0.07 + sh * 0.6).toFixed(3) + ")", title: c + " of " + n + " calls" }, pct(c, n)) : h("td", { class: "hc z" }, "–"); }),
+              h("td", { style: "text-align:center" }, t[k][0] >= t[k][1] ? h("span", { class: "tag c" }, "Concern") : h("span", { class: "tag i" }, "Interest"))))))));
+        body.append(converts(cols, list));
+        const words = list.filter((v) => st.topic < 0 || (v[5] || []).some(([k]) => k === st.topic)).sort((a, b) => (b[0] > a[0] ? 1 : -1));
+        const chips = h("div", { class: "chips" }, [[-1, "All topics"], ...order.slice(0, 10).map((k) => [k, tName(k)])].map(([k, l]) =>
+          h("button", { class: "chip", type: "button", "aria-pressed": String(st.topic === k), onclick: () => { st.topic = k; render(); } }, l)));
+        const sec = h("section", null, h("h4", null, "In their words", h("span", null, int(words.length) + " calls")), chips);
+        if (words.length && words[0][7] == null) sec.append(h("p", { class: "lock", style: "margin-top:12px" }, "Parents' own words are visible to the GEMS corporate login only. The counts above cover every analysed call."));
+        else sec.append(h("div", { class: "quotes", style: "margin-top:12px" }, words.slice(0, 40).map((v) => {
+          const qs = (v[7].q || []).filter(([k]) => st.topic < 0 || k === st.topic).slice(0, 2);
+          return h("div", { class: "qcard" }, v[7].v ? h("div", { class: "w" }, v[7].v) : null, qs.map(([k, kind, q]) => h("div", { class: "q" }, h("span", { class: "tag " + (kind ? "i" : "c") }, tName(k)), " “" + q + "”")),
+            h("div", { class: "m" }, fmt(v[0]), "·", D.channels[v[2]], D.labels[v[6]] !== "(not set)" ? ["·", D.labels[v[6]]] : null, "·", h("span", { style: "color:" + KEEN[v[3]][1] }, KEEN[v[3]][0]), v[4] ? ["·", "visit booked"] : null));
+        })));
+        body.append(sec);
+      }
+      modal.replaceChildren(head, body);
+    }
+    render(); modal.querySelector(".x").focus({ preventScroll: true });
+  }
+
+  // ---------- week on week ----------
+  const WOW = [
+    ["Media", "Spend", (t) => t.spend, "inr", -1],
+    ["Media", "Impressions", (t) => t.impr, "int", 1],
+    ["Media", "Clicks", (t) => t.clicks || null, "int", 1],
+    ["Leads & calling", "Leads", (t) => t.leads, "int", 1],
+    ["Leads & calling", "CPL", (t) => (t.spend && t.leads ? t.spend / t.leads : null), "inr", -1],
+    ["Leads & calling", "Contacted", (t) => (t.leads ? (100 * t.contacted) / t.leads : null), "pct", 1],
+    ["Leads & calling", "Avg dials", (t) => (t.leads ? t.dials / t.leads : null), "dec", 1],
+    ["Leads & calling", "Connect rate", (t) => (t.dials ? (100 * t.connects) / t.dials : null), "pct", 1],
+    ["Leads & calling", "Hot prospects", (t) => (t.leads ? t.hot : null), "int", 1],
+    ["Leads & calling", "Junk + lost", (t) => (t.leads ? (100 * t.junk_lost) / t.leads : null), "pct", -1],
+    ["Visits", "Visits scheduled", (t) => t.sched, "int", 1],
+    ["Visits", "Visits done", (t) => t.visited, "int", 1],
+    ["Visits", "Lead → Visit", (t) => (t.leads ? (100 * t.visited) / t.leads : null), "pct", 1],
+    ["Conversion", "Applications received", (t) => t.apps, "int", 1],
+    ["Conversion", "Enrollments", (t) => t.enrols, "int", 1],
+    ["Money", "Total billing", (t) => t.billing, "lakh", 1],
+    ["Money", "Blended CAC", (t) => (t.spend && t.enrols ? t.spend / t.enrols : null), "inr", -1],
+    ["Money", "CAC % of billing", (t) => (t.spend && t.billing ? (100 * t.spend) / t.billing : null), "pct", -1],
+    ["Money", "L2P", (t) => (t.leads ? (100 * t.enrols) / t.leads : null), "pct", 1],
+  ];
+  const show = (v, f) => (v == null ? "–" : f === "lakh" ? lakh(v) : f === "inr" ? inr(v) : f === "pct" ? v.toFixed(1) + "%" : f === "dec" ? v.toFixed(2) : int(v));
+  function change(a, b, f, better) {
+    if (a == null || b == null) return null;
+    let txt, d;
+    if (f === "pct") { d = b - a; txt = (d > 0 ? "+" : d < 0 ? "−" : "") + Math.abs(d).toFixed(1) + " pts"; }
+    else if (!a) { if (!b) return { txt: "no change", cls: "" }; return { txt: "new", cls: better > 0 ? "up" : "down" }; }
+    else { d = (b - a) / a; txt = (d > 0 ? "+" : d < 0 ? "−" : "") + Math.abs(100 * d).toFixed(0) + "%"; }
+    const flat = f === "pct" ? Math.abs(d) < 0.5 : Math.abs(d) < 0.005;
+    return { txt: flat ? "no change" : txt, cls: flat ? "" : d * better > 0 ? "up" : "down" };
+  }
+  function spark(vals) {
+    const w = 112, ht = 28, bw = 10, gap = (w - bw * vals.length) / (vals.length - 1), max = Math.max(...vals.map((v) => v || 0)) || 1;
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("width", w); svg.setAttribute("height", ht); svg.setAttribute("class", "spark"); svg.setAttribute("aria-hidden", "true");
+    vals.forEach((v, i) => {
+      const r = document.createElementNS("http://www.w3.org/2000/svg", "rect"), bh = Math.max(2, ((v || 0) / max) * (ht - 2));
+      r.setAttribute("x", (i * (bw + gap)).toFixed(1)); r.setAttribute("y", (ht - bh).toFixed(1)); r.setAttribute("width", bw); r.setAttribute("height", bh.toFixed(1)); r.setAttribute("rx", 2);
+      r.setAttribute("fill", i === vals.length - 1 ? "#00A3E0" : v == null ? "#F0F0F2" : "#D2D2D7");
+      svg.append(r);
+    });
+    return svg;
+  }
+  // Monday-to-Sunday weeks covering from..to; the first and last are cut to the range
+  function weeksIn(from, to) {
+    const out = []; let w = shift(from, -((D8(from).getUTCDay() + 6) % 7));
+    for (; w <= to; w = shift(w, 7)) out.push([w < from ? from : w, shift(w, 6) > to ? to : shift(w, 6), w < from || shift(w, 6) > to]);
+    return out;
+  }
+  function drawWow() {
+    const set = new Set(sel()), ch = S.wowCh;
+    const agg = (a, b) => collect(a, b, (ci, c) => (set.has(ci) && (ch < 0 || c === ch) ? 1 : null)).get(1) || blank();
+    const wks = weeksIn(S.from, S.to), vals = wks.map(([a, b]) => agg(a, b)), range = agg(S.from, S.to);
+    const scope = (S.picked.size === 0 ? (S.order.length > 1 ? "All campuses" : short(D.campuses[S.order[0]])) : [...set].map((ci) => short(D.campuses[ci])).join(", ")) +
+      (ch < 0 ? "" : " · " + D.channels[ch]);
+    $("#wowTitle").textContent = "Week on week";
+    $("#wowSub").textContent = scope + " · " + span(S.from, S.to) + " · " + wks.length + (wks.length === 1 ? " week" : " weeks");
+
+    const cards = $("#wowCards"); cards.textContent = "";
+    const n = vals.length, li = wks.map((w) => !w[2]).lastIndexOf(true) > 0 ? wks.map((w) => !w[2]).lastIndexOf(true) : n - 1;   // cards compare the latest full week
+    for (const name of ["Leads", "Visits done", "Enrollments", "Total billing", "Blended CAC", "Spend"]) {
+      const [, label, f, kind, better] = WOW.find((x) => x[1] === name);
+      const b = f(vals[li]), a = li > 0 ? f(vals[li - 1]) : null, c = change(a, b, kind, better);
+      cards.append(h("div", { class: "wcard" }, h("div", { class: "k" }, label + " · " + span(wks[li][0], wks[li][1])), h("div", { class: "v" }, show(b, kind)),
+        h("div", { class: "row" }, c ? h("span", { class: "delta " + c.cls }, c.txt) : null, li > 0 ? "vs " + show(a, kind) + " the week before" : "first week in range")));
+    }
+
+    const t = $("#wowTable"); t.textContent = "";
+    t.append(h("thead", null, h("tr", null, h("th", { class: "first" }, "Metric"),
+      h("th", { class: "tot" }, "Whole range", h("br"), h("span", { class: "p" }, span(S.from, S.to))),
+      wks.map(([a, b, part]) => h("th", null, span(a, b), h("br"), h("span", { class: "p" }, part ? "part week" : "full week"))))));
+    const body = h("tbody"); let stage = null;
+    for (const [g, label, f, kind, better] of WOW) {
+      if (g !== stage) { stage = g; body.append(h("tr", { class: "stage" }, h("td", { class: "first", colspan: String(n + 2) }, g))); }
+      body.append(h("tr", null, h("td", { class: "first" }, label), h("td", { class: "tot", style: "font-weight:600" }, show(f(range), kind)),
+        vals.map((v, i) => {
+          const c = i ? change(f(vals[i - 1]), f(v), kind, better) : null;
+          return h("td", null, h("div", null, show(f(v), kind)), c ? h("div", null, h("span", { class: "delta " + c.cls }, c.txt)) : null);
+        })));
+    }
+    t.append(body);
+  }
+
+  // ---------- overall summary (leadership) ----------
+  function drawSummary() {
+    const campuses = sel(), set = new Set(campuses);
+    const grid = collect(S.from, S.to, (ci) => (set.has(ci) ? ci : null));
+    const row = (ci) => grid.get(ci) || blank(), all = total(campuses.map(row));
+    $("#sumSub").textContent = (S.picked.size === 0 ? "All campuses" : campuses.map((ci) => short(D.campuses[ci])).join(", ")) + " · " + span(S.from, S.to);
+    const COL = [["Total spend", (t) => (t.spend ? inr(t.spend) : "–")], ["Impressions", (t) => (t.impr ? int(t.impr) : "–")],
+      ["Reach", (t) => (t.reach ? int(t.reach) : "–")], ["Clicks", (t) => (t.clicks ? int(t.clicks) : "–")],
+      ["CTR", (t) => (t.clicks && t.impr ? (100 * t.clicks / t.impr).toFixed(2) + "%" : "–")],
+      ["CPC", (t) => (t.spend && t.clicks ? "₹" + (t.spend / t.clicks).toFixed(1) : "–")], ["Total leads", (t) => int(t.leads)], ["Visits scheduled", (t) => int(t.sched)],
+      ["Visits done", (t) => int(t.visited)], ["Applications received", (t) => int(t.apps)],
+      ["Enrollments", (t) => int(t.enrols)], ["Total billing", (t) => (t.billing ? inr(t.billing) : "–")],
+      ["Blended CAC", (t) => (t.spend && t.enrols ? inr(t.spend / t.enrols) : "–")], ["L2P", (t) => pct(t.enrols, t.leads) || "–"]];
+    const k = $("#sumKpis"); k.textContent = "";
+    [["Spend", all.spend ? lakh(all.spend) : "–", "Agency Spends"], ["Leads", int(all.leads), all.spend && all.leads ? inr(all.spend / all.leads) + " cost per lead" : "CRM leads"],
+     ["Visits scheduled", int(all.sched), (pct(all.sched, all.leads) || "–") + " of leads"], ["Visits done", int(all.visited), (pct(all.visited, all.leads) || "–") + " of leads"],
+     ["Applications received", int(all.apps), (pct(all.apps, all.visited) || "–") + " of visits done"],
+     ["Enrollments", int(all.enrols), (pct(all.enrols, all.visited) || "–") + " of visits done"],
+     ["Total billing", all.billing ? lakh(all.billing) : "–", "Net Billing Revenue"],
+     ["Blended CAC", all.spend && all.enrols ? inr(all.spend / all.enrols) : "–", all.spend && all.billing ? pct(all.spend, all.billing) + " of billing" : "spend per enrollment"],
+     ["L2P", pct(all.enrols, all.leads) || "–", "lead → enrollment"],
+    ].forEach(([a, b, c]) => k.append(h("div", { class: "kpi" }, h("div", { class: "k" }, a), h("div", { class: "v" }, b), h("div", { class: "s" }, c))));
+    const t = $("#sumTable"); t.textContent = ""; t.className = "sum";
+    t.append(h("thead", null, h("tr", null, h("th", { class: "first" }, "Campus"), COL.map((c) => h("th", null, c[0])))));
+    const body = h("tbody");
+    for (const ci of campuses) {
+      const r = row(ci), ag = agencyOf(D.campuses[ci]);
+      body.append(h("tr", null, h("td", { class: "first" }, short(D.campuses[ci]), h("small", null, ag === "No agency" ? "No agency" : "Agency · " + ag)), COL.map((c) => h("td", null, c[1](r)))));
+    }
+    body.append(h("tr", { class: "total" }, h("td", { class: "first" }, campuses.length > 1 ? "All campuses" : "Total"), COL.map((c) => h("td", null, c[1](all)))));
+    t.append(body);
+    if (!campuses.length) $("#sumSub").textContent = "Pick at least one campus.";
+  }
+})();
+</script>
+</body>
+</html>
