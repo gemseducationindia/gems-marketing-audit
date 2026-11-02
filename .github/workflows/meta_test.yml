@@ -1,0 +1,30 @@
+# One-off test of the Meta Marketing API token (META_TOKEN): runs on pushes to the test branch only. Output is encrypted.
+name: Meta API test
+on:
+  push: {branches: [claude/project-thread-dyg0xt]}
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  meta:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: pip install cryptography==43.0.3
+      - run: python meta_test.py
+        env:
+          META_TOKEN: "${{ secrets.META_TOKEN }}"
+          META_TEST_PUB: |
+            -----BEGIN PUBLIC KEY-----
+            MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAto7qJDceEoY9f34OXkJO
+            TJnA5z2SVUOSr3VM2hJHkW7zeKXGjSEL5+nl1K3X+nq2eFe7VGcijlz6f5/7LNKy
+            dcZNDzUVK25g5fdgEqwfexK34iMf3kiaNclMK+hQXFHbwGZqqXwsjJHFPL85aBDL
+            bU/MfCDGkm4S9GGhdwL+0kEjx4E87EhkV6+zZVmJLoqP4hk1Kp1q7MwSyDA/IGTF
+            +zXEwD9YlhMjXGbsbZKVUU7AfsQTAVqEhEuOqMBF/zFQ7ue7B61VWZ+BTQN7X6cj
+            Tzv7zsEdXYgOa7xfXicuPlWosDh6QhmlgpeXkiEkAzF9Z8L1xbkBPhygWJI7o+bm
+            NGb7JtyfR8902s83RWc5SjQFdBFmNFAmRDWYiqLK59dInGgf0aq3I81uym1RHbcl
+            j4u+ay9fnpiOwObu2k/z0jNVwvcroEz4rMMT/feH8Ejm8iMzdKCdO0CeBmimSUES
+            LQgDnt2u79DYUcfFLdjN6uau9QwAKV9CP1KwHqegjRPZAgMBAAE=
+            -----END PUBLIC KEY-----
