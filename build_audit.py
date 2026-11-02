@@ -189,11 +189,12 @@ for d in deals:
     if enrolled and bill[d["name"]]:
         BL.append([str(d["blocking_fee_paid_on"] or d["enrolled_on"] or d["creation"])[:10], ci, ch, bill[d["name"]]] + tg)
 
-# Agency spend per day: [day, campus, channel, spend, impressions, clicks, agency-reported leads, reach, campaign or -1]
+# Agency spend per day: [day, campus, channel, spend, impressions, clicks, agency-reported leads, reach, campaign]. Every row names a
+# campaign (a sheet total with none gets "Spend not split by campaign"), so campaign rows on the page always add up to the channel total.
 SP, spend_upto = [], {}
 def spend(agency, day, camp, ch, amount, impr=0, clicks=0, ag_leads=0, reach=0, campaign=None):
     SP.append([day.date().isoformat(), idx(campuses, camp), channels.index(ch), round(amount, 2), num(impr), num(clicks),
-               num(ag_leads), num(reach), lab(campaign) if campaign else -1])
+               num(ag_leads), num(reach), lab(campaign or "Spend not split by campaign")])
     spend_upto[agency] = max(spend_upto.get(agency, ""), day.date().isoformat())
 
 def campus_of(tab):   # "GMS Gurugram" -> "GEMS Millennium School - Gurugram"
@@ -410,15 +411,14 @@ if os.environ.get("META_TOKEN"):
     _seen_m = set()
     for camp, r in _mr:
         name = r["campaign_name"].strip()
-        # name the campaign as the CRM's utm_campaign does; a lead-gen campaign the CRM doesn't know goes to the campus's only CRM
-        # Meta campaign, anything else (awareness, traffic, branding) stays a channel total
+        # name the campaign as the CRM's utm_campaign does where it differs (Indirapuram's mapped names); otherwise keep Meta's own
+        # name, so awareness, branding and boosted posts show as their own campaign rows (spend, no leads) and the rows add up
         tab = next((k[0] for k in EDE_CAMPAIGN if campus_of(k[0]) == camp), None)
-        campaign = name if name in CRM_CAMPS[(camp, "Meta")] else EDE_CAMPAIGN.get((tab, "Meta Ads - " + name))
-        if not campaign and "lead" in name.lower() and len(CRM_CAMPS[(camp, "Meta")]) == 1: campaign = next(iter(CRM_CAMPS[(camp, "Meta")]))
+        campaign = EDE_CAMPAIGN.get((tab, "Meta Ads - " + name)) or name
         leads_ = sum(int(x["value"]) for x in r.get("actions", []) if x["action_type"] == "lead")
         spend("Meta", dt.datetime.fromisoformat(r["date_start"]), camp, "Meta", float(r["spend"]), impr=r.get("impressions"),
               clicks=r.get("clicks"), ag_leads=leads_, reach=r.get("reach"), campaign=campaign)
-        _seen_m.add((camp, name, campaign or "(channel total)"))
+        _seen_m.add((camp, name, campaign))
     for k in sorted(_seen_m): diag("META", k[0], "|", k[1], "->", k[2])
     print("Meta API:", len(_mr), "campaign-days for", len(_mc), "campuses")
 
@@ -485,7 +485,7 @@ for x in L: _ck[(campuses[x[1]], channels[x[2]])][2] += 1
 for (cp, chn), (sp_, al, cl, a0, a1) in sorted(_ck.items()):
     if sp_ or chn in AD: diag(f"CHECK {cp:40} {chn:8} spend {round(sp_):>8} agency_leads {al:>5} crm_leads {cl:>5} spend_days {a0}..{a1}")
 _cc = C.Counter()
-for x in SP: _cc[(campuses[x[1]], channels[x[2]], labels[x[8]] if x[8] >= 0 else "(channel total)")] += x[3]
+for x in SP: _cc[(campuses[x[1]], channels[x[2]], labels[x[8]])] += x[3]
 diag("ENROLMENTS", sum(1 for x in S if x[3]), "billing", round(sum(b[3] for b in BL)))
 for k, v in sorted(_cc.items()): diag("CAMPAIGN", " | ".join(k), round(v))
 if os.path.exists(os.path.join(HERE, "diag_pub.pem")):
