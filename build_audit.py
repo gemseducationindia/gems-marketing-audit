@@ -4,7 +4,8 @@ Writes audit.json.
 
 Usage: python3 build_audit.py
 Needs the CRM token (CRM_TOKEN, or ~/.gems_crm_token) and the live sheet IDs (MARKETING_SHEETS, or ~/.gems_marketing_audit_sheets.json:
-{"Edelytics": id, "EchoVME": id, "Because": id}); the IDs stay off this public repo. Admissions and revenue come from the CRM itself
+{"Edelytics": id, "EchoVME": id, "Because": id}); the IDs stay off this public repo. Meta spend comes from the
+Meta Marketing API when META_TOKEN is set (see the Meta block below). Admissions and revenue come from the CRM itself
 (deals and the fee payments recorded on them). Parents' voice comes from the
 call audit repo (CALL_AUDIT_DIR, default the local clone). GitHub Actions runs this nightly (.github/workflows/nightly.yml).
 """
@@ -364,6 +365,62 @@ for sid in ([SHEETS["Because"]] if isinstance(SHEETS["Because"], str) else SHEET
 for (day, camp, campaign), (r, g) in bec.items():
     spend("Because", day, camp, "Google" if "google" in str(g(r, "source") or "").lower() else "Meta", g(r, "cost"), impr=g(r, "impr"),
           reach=g(r, "reach"), clicks=g(r, "clicks"), ag_leads=g(r, "leads"), campaign=campaign)
+
+# Meta: spend straight from the Meta Marketing API (META_TOKEN, a system user with ads_read on the GEMS ad accounts), one row per day
+# and campaign. Ad accounts aren't one per campus (the Kochi GMS account also runs GMA Kochi; the Coimbatore account runs branding for
+# Kalyan, Vikhroli and Raipur), so the campus comes from the campaign name, else from the account name.
+META_CITY = {"cbe": "Coimbatore", "lko": "Lucknow", "palam vihar": "Gurugram", "gurgaon": "Gurugram", "ghaziabad": "Indirapuram"}
+def meta_campus(campaign, account):
+    terr = {l["territory"] for l in leads} | set(campuses)
+    for text in (campaign, account):
+        t = re.sub(r"[_\-/]", " ", text.lower())
+        kochi = "kochi" in (t + " " + account.lower())
+        if "modern" in t and kochi: return "GEMS Modern Academy - Kochi"
+        if re.search(r"mill?enn?i", t) and kochi: return "GEMS Millennium School - Kochi"
+        hits = {c for c in terr if " - " in c and re.search(r"\b%s\b" % re.escape(c.split(" - ", 1)[1].lower()), t)}
+        hits |= {c for k, city in META_CITY.items() if re.search(r"\b%s\b" % k, t) for c in terr if c.endswith(" - " + city)}
+        if len(hits) == 1: return hits.pop()
+    return None
+def meta_get(path, **q):
+    url = "https://graph.facebook.com/v23.0/" + path + "?" + urllib.parse.urlencode({**q, "access_token": os.environ["META_TOKEN"].strip()})
+    while url:
+        for k in range(4):
+            try: d = json.load(urllib.request.urlopen(url, timeout=120)); break
+            except urllib.error.HTTPError as e:
+                if k == 3 or e.code < 500: raise SystemExit("Meta API error %s: %s" % (e.code, json.load(e).get("error", {}).get("message", "")))
+                time.sleep(10)
+        yield from d.get("data", []); url = d.get("paging", {}).get("next")
+if os.environ.get("META_TOKEN"):
+    _mr, _skip = [], C.Counter()
+    for a in meta_get("me/adaccounts", fields="name,account_id", limit=100):
+        for r in meta_get("act_%s/insights" % a["account_id"], level="campaign", time_increment=1, limit=500,
+                          time_range=json.dumps({"since": min(x[0] for x in L), "until": dt.date.today().isoformat()}),
+                          fields="campaign_name,spend,impressions,reach,clicks,actions"):
+            if not float(r.get("spend") or 0): continue
+            camp = meta_campus(r["campaign_name"], a["name"])
+            if not camp: _skip[(a["name"], r["campaign_name"])] += float(r["spend"]); continue
+            _mr.append((camp, r))
+    for k, v in _skip.items(): diag("META no campus", " | ".join(k), round(v))
+    # the API wins for each campus and day it has spend; days with none keep the sheet rows (Jodhpur's ads run from an account
+    # not shared with the system user, so its spend still comes from the sheet)
+    _mc, _md = {c for c, _ in _mr}, {(c, r["date_start"]) for c, r in _mr}
+    _before = len(SP)
+    SP[:] = [x for x in SP if not (channels[x[2]] == "Meta" and (campuses[x[1]], x[0]) in _md)]
+    diag("META campuses", sorted(_mc), "sheet Meta rows replaced", _before - len(SP))
+    _seen_m = set()
+    for camp, r in _mr:
+        name = r["campaign_name"].strip()
+        # name the campaign as the CRM's utm_campaign does; a lead-gen campaign the CRM doesn't know goes to the campus's only CRM
+        # Meta campaign, anything else (awareness, traffic, branding) stays a channel total
+        tab = next((k[0] for k in EDE_CAMPAIGN if campus_of(k[0]) == camp), None)
+        campaign = name if name in CRM_CAMPS[(camp, "Meta")] else EDE_CAMPAIGN.get((tab, "Meta Ads - " + name))
+        if not campaign and "lead" in name.lower() and len(CRM_CAMPS[(camp, "Meta")]) == 1: campaign = next(iter(CRM_CAMPS[(camp, "Meta")]))
+        leads_ = sum(int(x["value"]) for x in r.get("actions", []) if x["action_type"] == "lead")
+        spend("Meta", dt.datetime.fromisoformat(r["date_start"]), camp, "Meta", float(r["spend"]), impr=r.get("impressions"),
+              clicks=r.get("clicks"), ag_leads=leads_, reach=r.get("reach"), campaign=campaign)
+        _seen_m.add((camp, name, campaign or "(channel total)"))
+    for k in sorted(_seen_m): diag("META", k[0], "|", k[1], "->", k[2])
+    print("Meta API:", len(_mr), "campaign-days for", len(_mc), "campuses")
 
 for rec, l in zip(L, leads):   # applied, enrolled (any time), then for the lead CSV download: lead id, phone, email, CRM status
     rec += paid.get(l["name"], [0, 0]) + [l["name"], l["mobile_no"] or l["phone"] or "", l["email"] or "", l["status"] or ""]

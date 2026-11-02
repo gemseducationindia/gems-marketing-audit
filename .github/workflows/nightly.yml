@@ -1,5 +1,5 @@
 # Every night at 06:00 IST (after the call audit's 04:00 sync and Claude's 05:30 scoring): rebuild the marketing audit from the
-# live CRM, the agencies' spend sheets, the CRM's admissions and fee payments and the call audit, encrypt it per login and publish docs/.
+# live CRM, Meta spend from the Meta Marketing API, the agencies' spend sheets, the CRM's admissions and fee payments and the call audit, encrypt it per login and publish docs/.
 name: Nightly refresh
 on:
   schedule: [{cron: "30 0 * * *"}]   # 00:30 UTC = 06:00 IST
@@ -19,7 +19,7 @@ jobs:
         with: {python-version: "3.12"}
       - run: pip install openpyxl==3.1.5 cryptography==43.0.3
       - run: python build_audit.py
-        env: {CRM_TOKEN: "${{ secrets.CRM_TOKEN }}", MARKETING_SHEETS: "${{ secrets.MARKETING_SHEETS }}", CALL_AUDIT_DIR: ca}
+        env: {CRM_TOKEN: "${{ secrets.CRM_TOKEN }}", MARKETING_SHEETS: "${{ secrets.MARKETING_SHEETS }}", META_TOKEN: "${{ secrets.META_TOKEN }}", CALL_AUDIT_DIR: ca}
       - run: python publish.py audit.json "$(TZ=Asia/Kolkata date '+%-d %b %Y')"
         env: {MARKETING_USERS: "${{ secrets.MARKETING_USERS }}"}
       - name: Publish
