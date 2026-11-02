@@ -368,15 +368,15 @@ for (day, camp, campaign), (r, g) in bec.items():
 
 # Meta: spend straight from the Meta Marketing API (META_TOKEN, a system user with ads_read on the GEMS ad accounts), one row per day
 # and campaign. Ad accounts aren't one per campus (the Kochi GMS account also runs GMA Kochi; the Coimbatore account runs branding for
-# Kalyan, Vikhroli and Raipur), so the campus comes from the campaign name, else from the account name. Every campus that has Meta API
-# spend drops its Meta rows from the agency sheets; a campus with none (Jodhpur, whose ads run from an account not shared yet) keeps them.
+# Kalyan, Vikhroli and Raipur), so the campus comes from the campaign name, else from the account name.
 META_CITY = {"cbe": "Coimbatore", "lko": "Lucknow", "palam vihar": "Gurugram", "gurgaon": "Gurugram", "ghaziabad": "Indirapuram"}
 def meta_campus(campaign, account):
     terr = {l["territory"] for l in leads} | set(campuses)
     for text in (campaign, account):
         t = re.sub(r"[_\-/]", " ", text.lower())
-        if "modern academy" in t and "kochi" in (t + " " + account.lower()): return "GEMS Modern Academy - Kochi"
-        if "millennium" in t and "kochi" in t: return "GEMS Millennium School - Kochi"
+        kochi = "kochi" in (t + " " + account.lower())
+        if "modern" in t and kochi: return "GEMS Modern Academy - Kochi"
+        if "milleni" in t and kochi: return "GEMS Millennium School - Kochi"
         hits = {c for c in terr if " - " in c and re.search(r"\b%s\b" % re.escape(c.split(" - ", 1)[1].lower()), t)}
         hits |= {c for k, city in META_CITY.items() if re.search(r"\b%s\b" % k, t) for c in terr if c.endswith(" - " + city)}
         if len(hits) == 1: return hits.pop()
@@ -394,17 +394,19 @@ if os.environ.get("META_TOKEN"):
     _mr, _skip = [], C.Counter()
     for a in meta_get("me/adaccounts", fields="name,account_id", limit=100):
         for r in meta_get("act_%s/insights" % a["account_id"], level="campaign", time_increment=1, limit=500,
-                          time_range=json.dumps({"since": "2026-06-01", "until": dt.date.today().isoformat()}),
+                          time_range=json.dumps({"since": min(x[0] for x in L), "until": dt.date.today().isoformat()}),
                           fields="campaign_name,spend,impressions,reach,clicks,actions"):
             if not float(r.get("spend") or 0): continue
             camp = meta_campus(r["campaign_name"], a["name"])
             if not camp: _skip[(a["name"], r["campaign_name"])] += float(r["spend"]); continue
             _mr.append((camp, r))
     for k, v in _skip.items(): diag("META no campus", " | ".join(k), round(v))
-    _mc = {c for c, _ in _mr}
+    # the API wins for each campus and day it has spend; days with none keep the sheet rows (Jodhpur's ads run from an account
+    # not shared with the system user, so its spend still comes from the sheet)
+    _mc, _md = {c for c, _ in _mr}, {(c, r["date_start"]) for c, r in _mr}
     _before = len(SP)
-    SP[:] = [x for x in SP if not (channels[x[2]] == "Meta" and campuses[x[1]] in _mc)]
-    diag("META campuses", sorted(_mc), "sheet Meta rows dropped", _before - len(SP))
+    SP[:] = [x for x in SP if not (channels[x[2]] == "Meta" and (campuses[x[1]], x[0]) in _md)]
+    diag("META campuses", sorted(_mc), "sheet Meta rows replaced", _before - len(SP))
     _seen_m = set()
     for camp, r in _mr:
         name = r["campaign_name"].strip()
