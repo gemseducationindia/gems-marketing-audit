@@ -376,7 +376,7 @@ def meta_campus(campaign, account):
         t = re.sub(r"[_\-/]", " ", text.lower())
         kochi = "kochi" in (t + " " + account.lower())
         if "modern" in t and kochi: return "GEMS Modern Academy - Kochi"
-        if "milleni" in t and kochi: return "GEMS Millennium School - Kochi"
+        if re.search(r"mill?enn?i", t) and kochi: return "GEMS Millennium School - Kochi"
         hits = {c for c in terr if " - " in c and re.search(r"\b%s\b" % re.escape(c.split(" - ", 1)[1].lower()), t)}
         hits |= {c for k, city in META_CITY.items() if re.search(r"\b%s\b" % k, t) for c in terr if c.endswith(" - " + city)}
         if len(hits) == 1: return hits.pop()
