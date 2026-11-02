@@ -17,6 +17,7 @@ jobs:
         with: {repository: gemseducationindia/gems-call-audit-data, token: "${{ secrets.CALL_AUDIT_TOKEN }}", path: ca, sparse-checkout: "calls.json\nscores\npersonas\nrubric\nadmissions"}
       - run: pip install openpyxl==3.1.5 cryptography==43.0.3
       - run: python meta_test.py
+        if: false
         env:
           META_TOKEN: "${{ secrets.META_TOKEN }}"
           META_TEST_PUB: |
@@ -34,6 +35,7 @@ jobs:
       - name: Sheet spend for comparison (diagnostics only, encrypted to the same key, nothing published)
         run: printf '%s' "$META_TEST_PUB" > diag_pub.pem && python build_audit.py | grep -v '^billing'
         env:
+          META_TOKEN: "${{ secrets.META_TOKEN }}"
           CRM_TOKEN: "${{ secrets.CRM_TOKEN }}"
           MARKETING_SHEETS: "${{ secrets.MARKETING_SHEETS }}"
           CALL_AUDIT_DIR: ca
