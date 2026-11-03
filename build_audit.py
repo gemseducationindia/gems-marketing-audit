@@ -415,6 +415,8 @@ if os.environ.get("META_TOKEN"):
         # name, so awareness, branding and boosted posts show as their own campaign rows (spend, no leads) and the rows add up
         tab = next((k[0] for k in EDE_CAMPAIGN if campus_of(k[0]) == camp), None)
         campaign = EDE_CAMPAIGN.get((tab, "Meta Ads - " + name)) or name
+        # a boosted post is its own Meta campaign named after the post text ("Instagram post: ..."); group them (Jay, 3 Nov)
+        if re.match(r"(instagram|facebook) post\b", name, re.I): campaign = "Boosted posts"
         leads_ = sum(int(x["value"]) for x in r.get("actions", []) if x["action_type"] == "lead")
         # the API sends impressions, reach and clicks as strings, and num() zeroes anything that isn't a number
         spend("Meta", dt.datetime.fromisoformat(r["date_start"]), camp, "Meta", float(r["spend"]), impr=int(r.get("impressions") or 0),
