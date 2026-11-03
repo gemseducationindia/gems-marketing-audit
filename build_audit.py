@@ -84,7 +84,7 @@ REASON = {raw: label for label, raws in _R.items() for raw in raws}
 leads = get("CRM Lead", ["name", "creation", "source", "territory", "status", "is_duplicate", "visit_state", "visit_done_on",
                          "mobile_no", "phone", "lost_reason", "utm_campaign", "utm_content", "grade_applied", "email", "lead_name", "student_name", "date_of_birth", "current_school",
                          "curriculum", "academic_year", "lead_owner", "intent", "last_call_outcome", "next_contact_date", "visit_state", "next_visit_on",
-                         "visit_done_on", "how_heard", "utm_source", "utm_medium", "calls_made", "calls_connected", "first_contacted_on", "last_attempt_at", "converted_on"])
+                         "visit_done_on", "how_heard", "utm_source", "utm_medium", "calls_made", "calls_connected", "first_contacted_on", "last_attempt_at", "converted_on", "_user_tags"])
 visits = get("GEMS Visit", ["enquiry", "status"])
 calls = get("CRM Call Log", ["type", "status", "duration", "telephony_medium", "reference_docname", "to", "start_time", "creation"],
             [["type", "=", "Outgoing"]])
@@ -94,7 +94,10 @@ print("leads", len(leads), "visits", len(visits), "outgoing calls", len(calls))
 # Test leads Jay named (29 Oct) are left out everywhere, with their deals
 TEST_LEADS = {"CRM-LEAD-2026-00013", "CRM-LEAD-2026-00045", "CRM-LEAD-2026-01730"}
 TEST_DEALS = {"CRM-DEAL-2026-00092"}   # "Priya Demo / Aarav Demo", GSE Jodhpur (Jay, 29 Oct)
-leads = [l for l in leads if not l["is_duplicate"] and l["territory"] and l["name"] not in TEST_LEADS]
+# Bulk imports are not enquiries and stay out of every lead count (Jay, 2 and 3 Nov): source "Physical form" or tag "Bulk import"
+BULK = lambda l: l["source"] == "Physical form" or "bulk import" in (l.get("_user_tags") or "").lower()
+print("bulk imports left out", sum(map(BULK, leads)))
+leads = [l for l in leads if not l["is_duplicate"] and l["territory"] and l["name"] not in TEST_LEADS and not BULK(l)]
 _seen = C.defaultdict(C.Counter)   # a campaign counts as the platform that brings at least 90% of its ad-source leads
 for l in leads:
     if CHANNEL.get(l["source"] or "") in AD and (l["utm_campaign"] or "").strip(): _seen[(l["territory"], l["utm_campaign"].strip())][CHANNEL[l["source"]]] += 1
