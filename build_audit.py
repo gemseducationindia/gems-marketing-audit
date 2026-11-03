@@ -416,8 +416,9 @@ if os.environ.get("META_TOKEN"):
         tab = next((k[0] for k in EDE_CAMPAIGN if campus_of(k[0]) == camp), None)
         campaign = EDE_CAMPAIGN.get((tab, "Meta Ads - " + name)) or name
         leads_ = sum(int(x["value"]) for x in r.get("actions", []) if x["action_type"] == "lead")
-        spend("Meta", dt.datetime.fromisoformat(r["date_start"]), camp, "Meta", float(r["spend"]), impr=r.get("impressions"),
-              clicks=r.get("clicks"), ag_leads=leads_, reach=r.get("reach"), campaign=campaign)
+        # the API sends impressions, reach and clicks as strings, and num() zeroes anything that isn't a number
+        spend("Meta", dt.datetime.fromisoformat(r["date_start"]), camp, "Meta", float(r["spend"]), impr=int(r.get("impressions") or 0),
+              clicks=int(r.get("clicks") or 0), ag_leads=leads_, reach=int(r.get("reach") or 0), campaign=campaign)
         _seen_m.add((camp, name, campaign))
     for k in sorted(_seen_m): diag("META", k[0], "|", k[1], "->", k[2])
     print("Meta API:", len(_mr), "campaign-days for", len(_mc), "campuses")
