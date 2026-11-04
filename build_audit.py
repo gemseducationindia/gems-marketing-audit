@@ -418,12 +418,12 @@ if os.environ.get("META_TOKEN"):
             if not camp: _skip[(a["name"], r["campaign_name"])] += float(r["spend"]); continue
             _mr.append((camp, r))
     for k, v in _skip.items(): diag("META no campus", " | ".join(k), round(v))
-    # the API wins for each campus and day it has spend; days with none keep the sheet rows (Jodhpur's ads run from an account
-    # not shared with the system user, so its spend still comes from the sheet)
-    _mc, _md = {c for c, _ in _mr}, {(c, r["date_start"]) for c, r in _mr}
+    # Meta spend comes only from the API (Jay, 4 Nov: "Google spends from the sheets, and Meta spends from Meta API"): every Meta
+    # row read from an agency sheet is dropped, so the sheets give Google spend only
+    _mc = {c for c, _ in _mr}
     _before = len(SP)
-    SP[:] = [x for x in SP if not (channels[x[2]] == "Meta" and (campuses[x[1]], x[0]) in _md)]
-    diag("META campuses", sorted(_mc), "sheet Meta rows replaced", _before - len(SP))
+    SP[:] = [x for x in SP if channels[x[2]] != "Meta"]
+    diag("META campuses", sorted(_mc), "sheet Meta rows dropped", _before - len(SP))
     _seen_m = set()
     for camp, r in _mr:
         name = r["campaign_name"].strip()
