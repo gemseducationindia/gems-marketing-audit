@@ -230,6 +230,8 @@ EDE_CAMPAIGN = {
     ("GMS Indirapuram", "Meta Ads - Traffic Ad - Video - New Campus Now Open"): "Meta Ads - Awareness",
     ("GMS Indirapuram", "Google Ads - Search Ads - Indirapuram Keywords"): "Google Ads - Search Ad",
     ("GMS Indirapuram", "Google Ads - Search Ads - Ghaziabad Keywords"): "Google Ads - Search Ad",
+    ("GMS Indirapuram", "Google Ads - Indirapuram Keywords"): "Google Ads - Search Ad",   # new sheet's names (4 Nov)
+    ("GMS Indirapuram", "Google Ads - Ghaziabad Keywords"): "Google Ads - Search Ad",
 }
 # Diagnostics (sheet layout, spend check) go to the run log encrypted to diag_pub.pem, so the public log shows nothing
 DIAG = []
@@ -265,7 +267,8 @@ for ws, camp in _ede:
     for _i, _r in enumerate(ws.iter_rows(min_row=1, max_row=4, values_only=True)): diag("EDE", ws.title, ws.max_row, "r%d" % (_i + 1), list(_r))
     tab, rows = ws.title.strip(), list(ws.iter_rows(values_only=True))
     if not rows: continue
-    head = [str(v or "").strip().lower() for v in rows[0]]
+    # Indirapuram's tab (added 4 Nov) heads the column "Campaign Name"; the other tabs say "Campaign"
+    head = ["campaign" if h == "campaign name" else h for h in (str(v or "").strip().lower() for v in rows[0])]
     if "campaign" in head:   # long format: one row per day and campaign
         col = {n: i for i, n in enumerate(head) if n}
         g = lambda r, k: next((r[col[n]] for n in EDE_COLS.get(k, (k,)) if n in col and col[n] < len(r)), 0)
