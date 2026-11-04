@@ -374,13 +374,15 @@ for (day, camp, campaign), (r, g) in bec.items():
 # and campaign. Ad accounts aren't one per campus (the Kochi GMS account also runs GMA Kochi; the Coimbatore account runs branding for
 # Kalyan, Vikhroli and Raipur), so the campus comes from the campaign name, else from the account name.
 META_CITY = {"cbe": "Coimbatore", "lko": "Lucknow", "palam vihar": "Gurugram", "gurgaon": "Gurugram", "ghaziabad": "Indirapuram"}
-def meta_campus(campaign, account):
+def meta_campus(campaign, account, adset=""):
     terr = {l["territory"] for l in leads} | set(campuses)
-    for text in (campaign, account):
+    # campaign name first, then the ad set's (a Kochi campaign can hold one ad set per school, e.g. Call_Placed_GMA and
+    # Call_Placed_GMS: Shreya at Because, 4 Nov), then the ad account's
+    for text in (campaign, adset, account):
         t = re.sub(r"[_\-/]", " ", text.lower())
         kochi = "kochi" in (t + " " + account.lower())
-        if "modern" in t and kochi: return "GEMS Modern Academy - Kochi"
-        if re.search(r"mill?enn?i", t) and kochi: return "GEMS Millennium School - Kochi"
+        if ("modern" in t or re.search(r"\bgma\b", t)) and kochi: return "GEMS Modern Academy - Kochi"
+        if (re.search(r"mill?enn?i", t) or re.search(r"\bgms\b", t)) and kochi: return "GEMS Millennium School - Kochi"
         hits = {c for c in terr if " - " in c and re.search(r"\b%s\b" % re.escape(c.split(" - ", 1)[1].lower()), t)}
         hits |= {c for k, city in META_CITY.items() if re.search(r"\b%s\b" % k, t) for c in terr if c.endswith(" - " + city)}
         if len(hits) == 1: return hits.pop()
@@ -397,11 +399,11 @@ def meta_get(path, **q):
 if os.environ.get("META_TOKEN"):
     _mr, _skip = [], C.Counter()
     for a in meta_get("me/adaccounts", fields="name,account_id", limit=100):
-        for r in meta_get("act_%s/insights" % a["account_id"], level="campaign", time_increment=1, limit=500,
+        for r in meta_get("act_%s/insights" % a["account_id"], level="adset", time_increment=1, limit=500,
                           time_range=json.dumps({"since": min(x[0] for x in L), "until": dt.date.today().isoformat()}),
-                          fields="campaign_name,spend,impressions,reach,clicks,actions"):
+                          fields="campaign_name,adset_name,spend,impressions,reach,clicks,actions"):
             if not float(r.get("spend") or 0): continue
-            camp = meta_campus(r["campaign_name"], a["name"])
+            camp = meta_campus(r["campaign_name"], a["name"], r.get("adset_name") or "")
             if not camp: _skip[(a["name"], r["campaign_name"])] += float(r["spend"]); continue
             _mr.append((camp, r))
     for k, v in _skip.items(): diag("META no campus", " | ".join(k), round(v))
