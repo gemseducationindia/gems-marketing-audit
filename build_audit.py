@@ -170,6 +170,12 @@ CORE_FEES = {"application fee", "blocking fee", "tuition", "annual fee"}
 bill = C.defaultdict(float)
 for r in get("GEMS Application Fee", ["parent", "fee", "taken", "published", "discount_amount"], parent="CRM Deal"):
     if (r["fee"] or "").strip().lower() in CORE_FEES or r["taken"]: bill[r["parent"]] += (r["published"] or 0) - (r["discount_amount"] or 0)
+# Estimated billing for enrolled deals whose grade has no fee grid yet (Jay, 4 Nov 2026): GMS Kochi 2027-28 plan has no Grade 6/7,
+# so tuition uses the plan's highest rate (Grade 5, 1,75,450) as a floor. Used only while the deal has no Fees rows, so it drops
+# out by itself once alignd adds the grid. Same figures as the productivity Business tab.
+for k, v in {"CRM-DEAL-2026-00090": 250450,    # Rebecca Ann Jacob, Grade 6: published 3,10,450 - discount 60,000
+             "CRM-DEAL-2026-00091": 300450}.items():   # Dev Ranjith, Grade 7: published 3,10,450 - discount 10,000
+    bill.setdefault(k, v)
 S, F, AF, BL, unmatched, paid, pay = [], [], [], [], 0, {}, {}   # F: revenue fees (admission + tuition), AF: application fees (not revenue)
 for d in deals:
     fees = paylines[d["name"]]
