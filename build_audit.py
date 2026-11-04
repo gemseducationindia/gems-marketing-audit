@@ -293,7 +293,8 @@ plat = lambda t: "Google" if "google" in t.lower() else "Meta" if "meta" in t.lo
 echo, covered = list(workbook("EchoVME")), set()   # covered: (campus, channel, "YYYY-MM") read from the new layout
 for ws in echo:
     top = [list(r) for r in ws.iter_rows(min_row=1, max_row=2, values_only=True)]
-    if len(top) < 2 or "audience" not in [str(v or "").strip().lower() for v in top[1]]: continue
+    # Meta tabs name the ad set "Audience"; the Google tabs ("Oct - New Google", 4 Nov) name it "Objective" (Branding / Lead Gen)
+    if len(top) < 2 or not {"audience", "objective"} & {str(v or "").strip().lower() for v in top[1]}: continue
     head = [str(v or "").strip().lower() for v in top[1]]
     blocks = []
     for c, v in enumerate(head):
@@ -302,7 +303,7 @@ for ws in echo:
         label = str(top[0][c] or "").strip()
         cols = {head[k]: k for k in range(c, end)}
         # a label without a platform ("Coimbatore", from 30 Oct) is Meta when the block has Meta's Reach/Frequency columns
-        camp, ch = city_campus(label), plat(label) or ("Meta" if any(k.startswith(("reach", "freq")) for k in cols) else None)
+        camp, ch = city_campus(label), plat(label) or plat(ws.title) or ("Meta" if any(k.startswith(("reach", "freq")) for k in cols) else None)
         # the campus's lead-gen campaign: its only CRM campaign on that platform, or the only one named "... - LG - ..."
         # (Coimbatore's Meta leads also carry raw Meta campaign IDs from a website form)
         lg = CRM_CAMPS[(camp, ch)] if camp and ch else set()
@@ -317,12 +318,13 @@ for ws in echo:
             if not isinstance(d, dt.datetime): continue
             covered.add((camp, ch, d.strftime("%Y-%m")))
             if v("spends"):
-                aud = str(r[cols["audience"]] or "").strip().lower() if "audience" in cols else ""
+                ac = cols.get("audience", cols.get("objective"))
+                aud = str(r[ac] or "").strip().lower() if ac is not None and ac < len(r) else ""
                 spend("EchoVME", d, camp, ch, v("spends"), impr=v("impression"), clicks=v("clicks"), ag_leads=v("leads"), reach=v("reach"),
                       campaign=None if aud.startswith("brand") else campaign)
 for ws in echo:
     top = [list(r) for r in ws.iter_rows(min_row=1, max_row=8, values_only=True)]
-    if len(top) > 1 and "audience" in [str(v or "").strip().lower() for v in top[1]]: continue
+    if len(top) > 1 and {"audience", "objective"} & {str(v or "").strip().lower() for v in top[1]}: continue
     h = next((i for i, r in enumerate(top) if r and str(r[0] or "").strip().lower() == "date"), None)
     if h is None: diag("ECHO no header row", ws.title); continue
     head = [str(v or "").strip().lower() for v in top[h]]
