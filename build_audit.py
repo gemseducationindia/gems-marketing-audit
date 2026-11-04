@@ -409,9 +409,12 @@ def meta_get(path, **q):
         yield from d.get("data", []); url = d.get("paging", {}).get("next")
 if os.environ.get("META_TOKEN"):
     _mr, _skip = [], C.Counter()
+    # from 1 Sep 2026 (Jay's start date for spend), or the first CRM lead if earlier: the first leads came on 14 Sep, and
+    # starting there left out early-September spend (Indirapuram's launch ads)
+    _since = min(min(x[0] for x in L), "2026-09-01")
     for a in meta_get("me/adaccounts", fields="name,account_id", limit=100):
         for r in meta_get("act_%s/insights" % a["account_id"], level="adset", time_increment=1, limit=500,
-                          time_range=json.dumps({"since": min(x[0] for x in L), "until": dt.date.today().isoformat()}),
+                          time_range=json.dumps({"since": _since, "until": dt.date.today().isoformat()}),
                           fields="campaign_name,adset_name,spend,impressions,reach,clicks,actions"):
             if not float(r.get("spend") or 0): continue
             camp = meta_campus(r["campaign_name"], a["name"], r.get("adset_name") or "")
