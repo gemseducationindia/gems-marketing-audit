@@ -362,7 +362,7 @@ table.sum td.first small { display: block; color: var(--muted); font-weight: 400
     </section>
     <section class="kpis" id="sumKpis" aria-label="Totals"></section>
     <section class="panel"><div class="scroll"><table id="sumTable"></table></div></section>
-    <p class="note">Leads, visits scheduled and visits done count the leads created in the date range. Applications, enrollments and spend count what was paid in the range. Total billing is the net billing revenue (published fees less discounts) of the students whose blocking fee was paid in the range. Blended CAC is spend ÷ enrollments; L2P is enrollments ÷ leads; ROI is total billing ÷ spend.</p>
+    <p class="note">Leads, visits scheduled and visits done count the leads created in the date range. Applications, enrollments and spend count what was paid in the range. Total billing is the net billing revenue (published fees less discounts) of the students whose blocking fee was paid in the range. CPL is spend ÷ leads; Blended CAC is spend ÷ enrollments; L2P is enrollments ÷ leads; ROI is total billing ÷ spend.</p>
   </main>
 </div>
 
@@ -1078,7 +1078,8 @@ table.sum td.first small { display: block; color: var(--muted); font-weight: 400
     const COL = [["Total spend", (t) => (t.spend ? inr(t.spend) : "–")], ["Impressions", (t) => (t.impr ? int(t.impr) : "–")],
       ["Reach", (t) => (t.reach ? int(t.reach) : "–")], ["Clicks", (t) => (t.clicks ? int(t.clicks) : "–")],
       ["CTR", (t) => (t.clicks && t.impr ? (100 * t.clicks / t.impr).toFixed(2) + "%" : "–")],
-      ["CPC", (t) => (t.spend && t.clicks ? "₹" + (t.spend / t.clicks).toFixed(1) : "–")], ["Total leads", (t) => int(t.leads)], ["Visits scheduled", (t) => int(t.sched)],
+      ["CPC", (t) => (t.spend && t.clicks ? "₹" + (t.spend / t.clicks).toFixed(1) : "–")], ["Total leads", (t) => int(t.leads)],
+      ["CPL", (t) => (t.spend && t.leads ? inr(t.spend / t.leads) : "–")], ["Visits scheduled", (t) => int(t.sched)],
       ["Visits done", (t) => int(t.visited)], ["Applications received", (t) => int(t.apps)],
       ["Enrollments", (t) => int(t.enrols)], ["Total billing", (t) => (t.billing ? inr(t.billing) : "–")],
       ["Blended CAC", (t) => (t.spend && t.enrols ? inr(t.spend / t.enrols) : "–")], ["L2P", (t) => pct(t.enrols, t.leads) || "–"],
