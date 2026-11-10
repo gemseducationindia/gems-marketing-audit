@@ -143,20 +143,16 @@ main { padding-block: 28px 64px; display: grid; gap: 44px; }
   .kpi:nth-child(4n+1) { padding-left: 0; border-left: 0; }
   .kpi:nth-child(n+5) { border-top: 1px solid var(--line); }
   .kpi .v { font-size: 28px; }
-  /* the funnel has nine cards: three rows of three; the summary has ten: two rows of five */
-  #kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  #kpis .kpi:nth-child(n) { padding-left: 16px; border-left: 1px solid var(--line); border-top: 0; }
-  #kpis .kpi:nth-child(3n+1) { padding-left: 0; border-left: 0; }
-  #kpis .kpi:nth-child(n+4) { border-top: 1px solid var(--line); }
+  /* the summary has ten cards: two rows of five */
   #sumKpis { grid-template-columns: repeat(5, minmax(0, 1fr)); }
   #sumKpis .kpi:nth-child(n) { padding-left: 16px; border-left: 1px solid var(--line); border-top: 0; }
   #sumKpis .kpi:nth-child(5n+1) { padding-left: 0; border-left: 0; }
   #sumKpis .kpi:nth-child(n+6) { border-top: 1px solid var(--line); }
 }
 @media (max-width: 720px) {
-  .kpis, #kpis, #sumKpis { grid-template-columns: 1fr 1fr; }
-  .kpis .kpi, #kpis .kpi:nth-child(n), #sumKpis .kpi:nth-child(n) { padding: 14px 12px; border-left: 0; border-top: 1px solid var(--line); }
-  .kpis .kpi:nth-child(-n+2), #kpis .kpi:nth-child(-n+2), #sumKpis .kpi:nth-child(-n+2) { border-top: 0; }
+  .kpis, #sumKpis { grid-template-columns: 1fr 1fr; }
+  .kpis .kpi, #sumKpis .kpi:nth-child(n) { padding: 14px 12px; border-left: 0; border-top: 1px solid var(--line); }
+  .kpis .kpi:nth-child(-n+2), #sumKpis .kpi:nth-child(-n+2) { border-top: 0; }
   .kpi .v { font-size: 26px; }
 }
 
@@ -760,7 +756,6 @@ table.sum td.first small { display: block; color: var(--muted); font-weight: 400
      ["Total billing", all.billing ? lakh(all.billing) : "–", "Net Billing Revenue"],
      ["Blended CAC", all.spend && all.enrols ? inr(all.spend / all.enrols) : "–", all.spend && all.billing ? pct(all.spend, all.billing) + " of billing" : "spend per enrollment"],
      ["L2P", pct(all.enrols, all.leads) || "–", "lead → enrollment"],
-     ["ROI", roi(all) || "–", "billing ÷ spend"],
     ].forEach(([a, b, c]) => k.append(h("div", { class: "kpi" }, h("div", { class: "k" }, a), h("div", { class: "v" }, b), h("div", { class: "s" }, c))));
 
     const wrap = $("#campuses"); wrap.textContent = "";
