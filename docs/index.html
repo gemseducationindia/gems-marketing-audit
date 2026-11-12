@@ -889,7 +889,6 @@ label.ck input { width: 16px; height: 16px; accent-color: var(--navy); margin: 0
       await saveLogins(async (L) => { for (const [, e] of adminsOf(L)) e.gh = await wrapFor(e.pub, enc(tok)); }, "Users tab: save the admin GitHub token");
       await patchPublished((idx) => { for (const [u, e] of adminsOf(U.logins)) if (idx[u]) { idx[u].admin = true; idx[u].gh = e.gh; } });
     } catch (e) { GH = prev; throw e; }
-    DISPATCH = DISPATCH || GH;
     await loadUsers();
     U.msg = "Token saved. You can manage logins now."; U.view = "list";
   }
