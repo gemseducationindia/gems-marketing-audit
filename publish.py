@@ -1,18 +1,18 @@
 """Encrypt the audit data once per login into docs/d-*.enc, each holding only that login's campuses.
-Logins: ~/.gems_marketing_audit_users.json {"Username": {"password": ..., "campuses": "all" | [territory, ...]}} (kept off the repo).
-docs/users.json maps a hash of each lower-cased username to its salt and file, so the page never lists the usernames.
-Key = PBKDF2-SHA256(password, per-user salt, 600k) -> AES-256-GCM over gzipped JSON.
+Logins: logins.json in this repo (see logins.py; admins manage them in the dashboard's Users tab). Each login has an RSA key pair;
+its data file = RSA-OAEP(SHA-256)-wrapped AES key (256 bytes) + IV (12) + AES-256-GCM(gzip(JSON)), so this needs no passwords.
+docs/users.json maps a hash of each lower-cased username to its password-sealed private key and file; the page never lists names.
 
 Usage: python publish.py audit.json "22 Oct 2026"   (the second argument is the refresh date)
 """
 import base64, glob, gzip, hashlib, json, os, secrets, sys
 from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 HERE = os.path.dirname(os.path.abspath(__file__)); DOCS = os.path.join(HERE, "docs")
-USERS = json.loads(os.environ["MARKETING_USERS"]) if os.environ.get("MARKETING_USERS") else json.load(open(os.path.expanduser("~/.gems_marketing_audit_users.json")))
+LOGINS = json.load(open(os.path.join(HERE, "logins.json")))
 src = dict(json.load(open(sys.argv[1])), sheet_taken=sys.argv[2])
-uid = lambda name: hashlib.sha256(("gems-audit:" + name.strip().lower()).encode()).hexdigest()[:32]
 
 
 def subset(d, allowed):
@@ -34,14 +34,15 @@ def subset(d, allowed):
 
 index = {}
 for f in glob.glob(os.path.join(DOCS, "d-*.enc")): os.remove(f)
-for name, u in USERS.items():
-    salt, file = secrets.token_bytes(16), "d-" + secrets.token_hex(8) + ".enc"
-    key = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=salt, iterations=600000).derive(u["password"].encode())
-    data = dict(subset(src, u["campuses"]), user=name, role="corporate" if u["campuses"] == "all" else "agency")
-    iv = secrets.token_bytes(12)
-    open(os.path.join(DOCS, file), "wb").write(iv + AESGCM(key).encrypt(iv, gzip.compress(json.dumps(data, separators=(",", ":")).encode(), mtime=0), None))
-    index[uid(name)] = {"salt": base64.b64encode(salt).decode(), "iter": 600000, "file": file}
-    print(f"{name}: {len(data['campuses'])} campuses, {len(data['leads'])} leads, {len(data['fees'])} fees, {len(data['spend'])} spend rows")
+for u, e in LOGINS.items():
+    data = dict(subset(src, e["campuses"]), role="corporate" if e["campuses"] == "all" else "agency")
+    k, iv = secrets.token_bytes(32), secrets.token_bytes(12)
+    pub = serialization.load_der_public_key(base64.b64decode(e["pub"]))
+    wrapped = pub.encrypt(k, padding.OAEP(mgf=padding.MGF1(hashes.SHA256()), algorithm=hashes.SHA256(), label=None))
+    blob = gzip.compress(json.dumps(data, separators=(",", ":")).encode(), mtime=0)
+    open(os.path.join(DOCS, e["file"]), "wb").write(wrapped + iv + AESGCM(k).encrypt(iv, blob, None))
+    index[u] = {k2: e[k2] for k2 in ("iter", "salt", "key", "file", "admin", "gh") if k2 in e}
+    print(f"{u[:8]}: {len(data['campuses'])} campuses, {len(data['leads'])} leads, {len(data['fees'])} fees, {len(data['spend'])} spend rows")
 json.dump(index, open(os.path.join(DOCS, "users.json"), "w"), indent=1)
 for old in ("data.enc", "key.json"):
     if os.path.exists(os.path.join(DOCS, old)): os.remove(os.path.join(DOCS, old))
