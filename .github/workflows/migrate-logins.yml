@@ -1,0 +1,23 @@
+# One-off: copy the logins in the old MARKETING_USERS secret into logins.json with the same passwords (the Users tab can then
+# show and manage them), commit, and start the nightly run so they sign in with the new format. Safe to run again: it keeps
+# logins that are already in logins.json.
+name: Move logins to logins.json
+on: {workflow_dispatch: {}}
+concurrency: {group: marketing-audit, cancel-in-progress: false}
+permissions: {contents: write, actions: write}
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: pip install cryptography==43.0.3
+      - run: python logins.py import-secret | sed -n 's/^Password: .*/Password: (hidden)/;p'
+        env: {MARKETING_USERS: "${{ secrets.MARKETING_USERS }}"}
+      - run: |
+          git config user.name "GEMS Marketing Audit bot"; git config user.email "gemseducationindia@users.noreply.github.com"
+          git add logins.json; git diff --cached --quiet && exit 0
+          git commit -q -m "Move logins from the MARKETING_USERS secret to logins.json"; git push -q
+      - run: gh workflow run nightly.yml --ref main
+        env: {GH_TOKEN: "${{ github.token }}"}
