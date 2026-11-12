@@ -13,7 +13,8 @@ jobs:
       - uses: actions/setup-python@v5
         with: {python-version: "3.12"}
       - run: pip install cryptography==43.0.3
-      - run: python logins.py import-secret | sed -n 's/^Password: .*/Password: (hidden)/;p'
+      - run: |
+          python logins.py import-secret | grep -v '^Password'
         env: {MARKETING_USERS: "${{ secrets.MARKETING_USERS }}"}
       - run: |
           git config user.name "GEMS Marketing Audit bot"; git config user.email "gemseducationindia@users.noreply.github.com"
