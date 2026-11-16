@@ -140,6 +140,9 @@ tags = lambda l: [idx(labels, (l["source"] or "").strip() or "Source not recorde
 
 # Leads: [created on, campus, channel, contacted, dials, connects, visit scheduled, visit done, junk/lost, reason or -1,
 #         source, campaign, ad, grade applied for (these four index into labels), applied, enrolled]
+# Leads imported late (e.g. Kalyan Meta leads 12-16 Nov, imported 16 Nov after the sheet columns shifted) count on their real
+# enquiry date from the lead sheet, not the CRM import date (CRM won't let "creation" be edited). lead_dates.json: {lead: "YYYY-MM-DD"}
+LEAD_DATE = json.load(open("lead_dates.json")) if os.path.exists("lead_dates.json") else {}
 L = []
 for l in leads:
     i, jl = l["name"], l["status"] in ("Junk", "Lost")
@@ -147,7 +150,7 @@ for l in leads:
     if jl:
         txt = (l["lost_reason"] or "").strip()
         r = idx(reasons, REASON.get(txt.lower(), txt))
-    L.append([l["creation"][:10], idx(campuses, l["territory"]), channels.index(channel(l)), int(dials[i] > 0),
+    L.append([LEAD_DATE.get(l["name"], l["creation"][:10]), idx(campuses, l["territory"]), channels.index(channel(l)), int(dials[i] > 0),
               dials[i], conns[i], int(i in vs), int(i in vd), int(jl), r] + tags(l) + [lab(l["grade_applied"])])
 
 CA = os.environ.get("CALL_AUDIT_DIR") or os.path.expanduser("~/Library/CloudStorage/OneDrive-GEMS/CodeTech/GEMS CRM Frappe/gems-call-audit")
