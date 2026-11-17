@@ -11,7 +11,7 @@ def mg(path, **q):
         try: d = json.load(urllib.request.urlopen(url, timeout=120))
         except urllib.error.HTTPError as e: p("ERR", path, e.code, e.read()[:300]); return
         yield from d.get("data", []); url = d.get("paging", {}).get("next")
-accts = list(mg("me/adaccounts", fields="name,account_id,currency,amount_spent,account_status,business_name,owner", limit=100))
+accts = list(mg("me/adaccounts", fields="name,account_id,currency,amount_spent,account_status", limit=100))
 for a in accts: p("ACCT", a["account_id"], a["name"], a.get("currency"), "lifetime_amount_spent", a.get("amount_spent"), "status", a.get("account_status"))
 for a in accts:
     m, camps = C.Counter(), C.Counter()
