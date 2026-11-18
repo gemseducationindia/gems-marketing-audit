@@ -1,0 +1,36 @@
+# Started by the Users tab after a login change, too. Every night at 06:00 IST (after the call audit's 04:00 sync and Claude's 05:30 scoring): rebuild the marketing audit from the
+# live CRM, Meta spend from the Meta Marketing API, the agencies' spend sheets, the CRM's admissions and fee payments and the call audit, encrypt it per login and publish docs/.
+name: Nightly refresh
+on:
+  schedule: [{cron: "30 0 * * *"}]   # 00:30 UTC = 06:00 IST
+  workflow_dispatch:
+concurrency: {group: marketing-audit, cancel-in-progress: false}
+permissions: {contents: write}
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Call audit data (private repo)
+        uses: actions/checkout@v4
+        with: {repository: gemseducationindia/gems-call-audit-data, token: "${{ secrets.CALL_AUDIT_TOKEN }}", path: ca, sparse-checkout: "calls.json\nscores\npersonas\nrubric\nadmissions"}
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: pip install openpyxl==3.1.5 cryptography==43.0.3
+      - run: python build_audit.py
+        env: {CRM_TOKEN: "${{ secrets.CRM_TOKEN }}", MARKETING_SHEETS: "${{ secrets.MARKETING_SHEETS }}", META_TOKEN: "${{ secrets.META_TOKEN }}", CALL_AUDIT_DIR: ca}
+      - name: Encrypt per login (logins.json as it is now on main, in case the Users tab changed it during the build)
+        run: |
+          git fetch -q origin main && git checkout -q origin/main -- logins.json
+          python publish.py audit.json "$(TZ=Asia/Kolkata date '+%-d %b %Y')"
+      - name: Publish
+        run: |
+          git config user.name "GEMS Marketing Audit bot"; git config user.email "gemseducationindia@users.noreply.github.com"
+          # build on top of whatever is on main now (the Users tab may have saved logins since this run started)
+          mkdir /tmp/out && cp docs/d-*.enc docs/users.json /tmp/out/ && git fetch -q origin main && git reset -q --hard origin/main
+          rm -f docs/d-*.enc && cp /tmp/out/* docs/
+          git add docs
+          git diff --cached --quiet && exit 0
+          # keep one rolling bot commit on top, so nightly encrypted copies don't pile up in the history
+          if [ "$(git log -1 --format=%an)" = "GEMS Marketing Audit bot" ]; then git commit -q --amend -m "Nightly refresh $(date -u +%F)"; git push -q -f; else git commit -q -m "Nightly refresh $(date -u +%F)"; git push -q; fi
