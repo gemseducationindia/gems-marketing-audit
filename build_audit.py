@@ -49,6 +49,10 @@ def workbook(agency, sheet_id=None):
 
 d10 = lambda p: (lambda s: s[-10:] if len(s) >= 10 else None)("".join(c for c in (p or "") if c.isdigit()))
 num = lambda v: v if isinstance(v, (int, float)) else 0
+def money(v):   # a number, or text such as "₹1,234.50" (Because's Google tab)
+    if isinstance(v, (int, float)): return v
+    try: return float(re.sub(r"[^0-9.\-]", "", str(v or "")) or 0)
+    except ValueError: return 0
 CHANNEL = {"Meta Ads": "Meta", "Instagram Ads": "Meta", "Facebook": "Meta", "Google Ads": "Google", "Website Enquiry": "Website"}
 AD = {"Meta", "Google"}
 CAMP_CH = {}   # (campus, utm_campaign) -> Meta/Google, learned from leads whose source is an ad platform; filled once leads are loaded
@@ -366,7 +370,9 @@ BEC_COLS = {"day": ("day", "date"), "campaign": ("campaign name", "campaign"), "
 bec = {}
 for sid in ([SHEETS["Because"]] if isinstance(SHEETS["Because"], str) else SHEETS["Because"]):
     for ws in workbook("Because", sid):
-        camp = campus_of(ws.title)
+        # a platform word before the campus names the channel ("Google GMS Kochi", 18 Nov: Because's Google tab has no Source column)
+        tab_ch = "Google" if ws.title.strip().lower().startswith("google ") else None
+        camp = campus_of(re.sub(r"(?i)^\s*(google|meta)\s+", "", ws.title))
         if not camp: print("skipping Because tab", ws.title); continue
         rows = list(ws.iter_rows(values_only=True))
         if not rows: continue
@@ -378,10 +384,15 @@ for sid in ([SHEETS["Because"]] if isinstance(SHEETS["Because"], str) else SHEET
         print("Because tab", ws.title, {k: hdr[i] if i is not None and i < len(hdr) else None for k, i in col.items()})
         g = lambda r, k, col=col: r[col[k]] if col[k] is not None and col[k] < len(r) else None
         for r in rows[1:]:
-            if isinstance(g(r, "day"), dt.datetime) and num(g(r, "cost")):
-                bec[(g(r, "day"), camp, g(r, "campaign"))] = (r, g)
-for (day, camp, campaign), (r, g) in bec.items():
-    spend("Because", day, camp, "Google" if "google" in str(g(r, "source") or "").lower() else "Meta", g(r, "cost"), impr=g(r, "impr"),
+            day = g(r, "day")
+            if isinstance(day, str):   # a date typed as text ("2026-11-17")
+                try: day = dt.datetime.strptime(day.strip()[:10], "%Y-%m-%d")
+                except ValueError: day = None
+            if isinstance(day, dt.datetime) and money(g(r, "cost")):
+                bec[(day, camp, g(r, "campaign"))] = (r, g, tab_ch)
+for (day, camp, campaign), (r, g, tab_ch) in bec.items():
+    ch = tab_ch or ("Google" if "google" in str(g(r, "source") or "").lower() else "Meta")
+    spend("Because", day, camp, ch, money(g(r, "cost")), impr=g(r, "impr"),
           reach=g(r, "reach"), clicks=g(r, "clicks"), ag_leads=g(r, "leads"), campaign=campaign)
 
 # Meta: spend straight from the Meta Marketing API (META_TOKEN, a system user with ads_read on the GEMS ad accounts), one row per day
