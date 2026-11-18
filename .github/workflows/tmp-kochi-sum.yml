@@ -1,0 +1,17 @@
+# temporary Kochi spend check (encrypted output); delete after use
+name: Kochi spend sum (temporary)
+on: {push: {branches: [claude/kochi-sum]}}
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with: {repository: gemseducationindia/gems-call-audit-data, token: "${{ secrets.CALL_AUDIT_TOKEN }}", path: ca, sparse-checkout: "calls.json\nscores\npersonas\nrubric\nadmissions"}
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: pip install openpyxl==3.1.5 cryptography==43.0.3
+      - run: python build_audit.py > /dev/null
+        env: {CRM_TOKEN: "${{ secrets.CRM_TOKEN }}", MARKETING_SHEETS: "${{ secrets.MARKETING_SHEETS }}", META_TOKEN: "${{ secrets.META_TOKEN }}", CALL_AUDIT_DIR: ca}
+      - run: python tmp_kochi_sum.py
+        env: {MARKETING_SHEETS: "${{ secrets.MARKETING_SHEETS }}"}
