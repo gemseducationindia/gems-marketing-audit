@@ -239,6 +239,10 @@ EDE_CAMPAIGN = {
     ("GMS Indirapuram", "Google Ads - Search Ads - Ghaziabad Keywords"): "Google Ads - Search Ad",
     ("GMS Indirapuram", "Google Ads - Indirapuram Keywords"): "Google Ads - Search Ad",   # new sheet's names (4 Nov)
     ("GMS Indirapuram", "Google Ads - Ghaziabad Keywords"): "Google Ads - Search Ad",
+    # Nov names; the lead sheet sync tags these leads "<Source> - <Type>" (18 Nov)
+    ("GMS Indirapuram", "Search Ads - Indirapuram Keywords"): "Google Ads - Search Ads - Indirapuram Keywords",
+    ("GMS Indirapuram", "Search Ads - Ghaziabad Keywords"): "Google Ads - Search Ads - Ghaziabad Keywords",
+    ("GMS Jodhpur", "Search Ads - Generic Keywords"): "Google Ads - Search Ads - Generic Keywords",
 }
 # Diagnostics (sheet layout, spend check) go to the run log encrypted to diag_pub.pem, so the public log shows nothing
 DIAG = []
@@ -247,7 +251,9 @@ def ede_block(tab, camp, title, heads, recs):
     """One Edelytics campaign's rows -> spend. recs yields dicts with day/cost/impr/clicks/leads/reach."""
     t = title.lower()
     # A block whose title doesn't name the platform (Gurugram's Meta block was retitled "x" on 29 Oct): Reach/Frequency columns mean Meta
-    ch = "Google" if "google" in t or "youtube" in t else "Meta" if "meta" in t or heads & {"reach", "frequency"} else None
+    # Edelytics also titles Google campaigns "Search Ads - ..." (Indirapuram and Jodhpur, Nov) with a Frequency column, so "search",
+    # "pmax"/"performance max" and "display" mean Google before Reach/Frequency can make it Meta
+    ch = "Google" if re.search(r"google|youtube|search ads|\bpmax\b|performance max|display ads", t) else "Meta" if "meta" in t or heads & {"reach", "frequency"} else None
     if not ch: diag("EDE skipped block", tab, repr(title)); return
     campaign = EDE_CAMPAIGN.get((tab, title)) or (None if "performance" in t else title)
     # A title that isn't one of the campus's CRM campaigns on that platform: a lead-gen block goes to the campus's only CRM
