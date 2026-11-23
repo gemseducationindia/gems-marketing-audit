@@ -101,7 +101,10 @@ TEST_DEALS = {"CRM-DEAL-2026-00092"}   # "Priya Demo / Aarav Demo", GSE Jodhpur 
 # Bulk imports are not enquiries and stay out of every lead count (Jay, 2 and 3 Nov): source "Physical form" or tag "Bulk import"
 BULK = lambda l: l["source"] == "Physical form" or "bulk import" in (l.get("_user_tags") or "").lower()
 print("bulk imports left out", sum(map(BULK, leads)))
-leads = [l for l in leads if not l["is_duplicate"] and l["territory"] and l["name"] not in TEST_LEADS and not BULK(l)]
+# Any lead with "test" in its name is a test lead, the same rule as the Productivity & Business dashboard (Jay, 23 Nov)
+IS_TEST = lambda l: l["name"] in TEST_LEADS or "test" in (l["lead_name"] or "").lower()
+print("test leads left out", sum(1 for l in leads if IS_TEST(l) and not l["is_duplicate"] and l["territory"] and not BULK(l)))
+leads = [l for l in leads if not l["is_duplicate"] and l["territory"] and not IS_TEST(l) and not BULK(l)]
 _seen = C.defaultdict(C.Counter)   # a campaign counts as the platform that brings at least 90% of its ad-source leads
 for l in leads:
     if CHANNEL.get(l["source"] or "") in AD and (l["utm_campaign"] or "").strip(): _seen[(l["territory"], l["utm_campaign"].strip())][CHANNEL[l["source"]]] += 1
