@@ -1,0 +1,15 @@
+# temporary spend sum for the budget sheet (encrypted output); delete after use
+name: Budget sheet spend sum (temporary)
+on: {push: {branches: [claude/budget-sheet-spend]}}
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with: {repository: gemseducationindia/gems-call-audit-data, token: "${{ secrets.CALL_AUDIT_TOKEN }}", path: ca, sparse-checkout: "calls.json\nscores\npersonas\nrubric\nadmissions"}
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: pip install openpyxl==3.1.5 cryptography==43.0.3
+      - run: python tmp_budget_sum.py | grep -E '^(KEY|DATA) '
+        env: {CRM_TOKEN: "${{ secrets.CRM_TOKEN }}", MARKETING_SHEETS: "${{ secrets.MARKETING_SHEETS }}", META_TOKEN: "${{ secrets.META_TOKEN }}", CALL_AUDIT_DIR: ca}
