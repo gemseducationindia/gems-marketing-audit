@@ -142,7 +142,13 @@ campuses, channels, reasons, labels = [], ["Meta", "Google", "Website", "Others"
 idx = lambda lst, v: lst.index(v) if v in lst else (lst.append(v) or len(lst) - 1)
 lab = lambda v: idx(labels, (v or "").strip() or "(not set)")
 # source, campaign, ad; a blank one gets a plain label instead of "(not set)"
-tags = lambda l: [idx(labels, (l["source"] or "").strip() or "Source not recorded"), idx(labels, (l["utm_campaign"] or "").strip() or "No campaign tag"),
+# Google Ads leads carry the agency's tracking tag (utm_campaign), not the campaign's name in Google Ads, which is what the agency's
+# spend sheet uses. Show such leads under the Google Ads name so spend and leads sit on one campaign row (Purvi at Because, 26 Nov:
+# the new GMS Kochi campaign wasn't showing by its name). Add a line here when an agency launches a Google campaign.
+GOOGLE_TAG = {"brandkeywordcampaign": "Brand Campaign | RSA | Oct 30",       # GMS Kochi, Because (from 30 Oct)
+              "bestschoolinkochicampaign": "CBSE School | RSA | Nov 23"}     # GMS Kochi, Because (from 23 Nov)
+_camp_name = lambda l: GOOGLE_TAG.get((l["utm_campaign"] or "").strip().lower()) if "kochi" in (l.get("territory") or "").lower() else None
+tags = lambda l: [idx(labels, (l["source"] or "").strip() or "Source not recorded"), idx(labels, _camp_name(l) or (l["utm_campaign"] or "").strip() or "No campaign tag"),
                   idx(labels, (l["utm_content"] or "").strip() or "No ad tag")]
 
 # Leads: [created on, campus, channel, contacted, dials, connects, visit scheduled, visit done, junk/lost, reason or -1,
