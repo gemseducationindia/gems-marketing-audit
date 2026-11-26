@@ -146,7 +146,9 @@ lab = lambda v: idx(labels, (v or "").strip() or "(not set)")
 # spend sheet uses. Show such leads under the Google Ads name so spend and leads sit on one campaign row (Purvi at Because, 26 Nov:
 # the new GMS Kochi campaign wasn't showing by its name). Add a line here when an agency launches a Google campaign.
 GOOGLE_TAG = {"brandkeywordcampaign": "Brand Campaign | RSA | Oct 30",       # GMS Kochi, Because (from 30 Oct)
-              "bestschoolinkochicampaign": "CBSE School | RSA | Nov 23"}     # GMS Kochi, Because (from 23 Nov)
+              # GMS Kochi, Because: launched 23 Nov as "Best School", renamed and re-tagged cbseschoolcampaign on 24 Nov (Purvi, 26 Nov)
+              "bestschoolinkochicampaign": "CBSE School | RSA | Nov 23",
+              "cbseschoolcampaign": "CBSE School | RSA | Nov 23"}
 _camp_name = lambda l: GOOGLE_TAG.get((l["utm_campaign"] or "").strip().lower()) if "kochi" in (l.get("territory") or "").lower() else None
 tags = lambda l: [idx(labels, (l["source"] or "").strip() or "Source not recorded"), idx(labels, _camp_name(l) or (l["utm_campaign"] or "").strip() or "No campaign tag"),
                   idx(labels, (l["utm_content"] or "").strip() or "No ad tag")]
